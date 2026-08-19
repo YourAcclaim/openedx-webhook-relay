@@ -18,6 +18,24 @@ Running checks
   make test            # tests only
   make quality         # lint only
 
+Updating pinned requirements
+****************************
+
+``requirements/*.in`` are the hand-edited sources; ``requirements/*.txt`` are
+compiled from them with ``pip-compile`` and committed. Edit the ``.in`` file,
+then re-pin::
+
+  make upgrade
+
+Run it under **Python 3.11**, the lowest version this package supports.
+``pip-compile`` output is interpreter-specific, so pins generated on a newer
+Python can resolve to distributions that fail to install on 3.11 in CI.
+
+``install_requires`` in ``setup.py`` deliberately reads ``base.in`` rather than
+``base.txt``: as a library, this package declares compatible *ranges* and
+leaves pinning to the installing environment. The compiled files exist to make
+CI and local development reproducible.
+
 Adding a new event
 *******************
 

@@ -9,10 +9,18 @@ requirements: ## Install development requirements
 	pip install -r requirements/dev.txt
 
 upgrade: ## Re-pin requirements/*.txt from requirements/*.in
-	pip-compile --upgrade -o requirements/base.txt requirements/base.in
-	pip-compile --upgrade -o requirements/test.txt requirements/test.in
-	pip-compile --upgrade -o requirements/quality.txt requirements/quality.in
-	pip-compile --upgrade -o requirements/dev.txt requirements/dev.in
+	# Run this under the lowest supported Python (3.11) — pip-compile output is
+	# interpreter-specific, and pins produced on a newer Python can fail to
+	# install on 3.11 in CI. Order matters: base.txt first, since test.in
+	# constrains against it.
+	pip-compile --upgrade --strip-extras -o requirements/base.txt requirements/base.in
+	pip-compile --upgrade --strip-extras -o requirements/test.txt requirements/test.in
+	pip-compile --upgrade --strip-extras -o requirements/quality.txt requirements/quality.in
+	pip-compile --upgrade --strip-extras -o requirements/dev.txt requirements/dev.in
+	# Optional AWS extra, constrained to the base pins so shared transitive
+	# dependencies (urllib3 and friends) cannot drift apart from them.
+	pip-compile --upgrade --strip-extras -c requirements/base.txt \
+		-o requirements/aws.txt requirements/aws.in
 
 quality: ## Run static analysis
 	ruff check openedx_webhook_relay
