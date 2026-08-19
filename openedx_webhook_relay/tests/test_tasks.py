@@ -7,8 +7,12 @@ Tasks are invoked with ``.apply()`` rather than as a plain function call.
 Calling a bound Celery task directly (``deliver_webhook(...)``) marks the
 request as ``called_directly``, which makes ``self.retry()`` re-raise
 immediately instead of looping — that would make every retry test a false
-negative. ``.apply()`` (which is what ``.delay()`` reduces to under
-``CELERY_TASK_ALWAYS_EAGER``) exercises the real retry path.
+negative.
+
+``.apply()`` alone is not enough either: under ``task_always_eager`` Celery
+runs the task exactly once and propagates ``Retry`` instead of re-executing
+it. Multi-attempt behaviour is therefore driven explicitly by ``_run``
+below, which re-applies the task with an incremented ``retries`` count.
 """
 
 # pylint: disable=missing-function-docstring
@@ -38,23 +42,38 @@ RAW_PAYLOAD = {
 }
 
 
+#: Upper bound on how many times ``_run`` will re-apply the task before
+#: declaring the retry loop runaway. Higher than any ``max_retries`` used here.
+_MAX_EAGER_ATTEMPTS = 10
+
+
 def _correlation_id():
     return str(uuid.uuid4())
 
 
 def _run(*args):
     """
-    Run deliver_webhook through the real (eager) Celery execution path.
+    Run deliver_webhook through its full retry sequence.
 
-    A ``Retry`` may legitimately bubble out of eager execution depending on
-    Celery version/propagation settings — it's control-flow signaling, not
-    a test failure, and by the time it surfaces every attempt has already
-    executed (that's what the DB-row assertions in each test verify).
+    Celery's eager mode invokes a task exactly once and propagates ``Retry``
+    rather than re-executing it, so the retry loop has to be driven from
+    here. Each pass re-applies the task with an incremented ``retries``
+    count, which is what the task derives ``attempt_number`` from
+    (``self.request.retries + 1``).
+
+    Swallowing the ``Retry`` and returning after a single ``apply()`` — as
+    this helper used to do — meant the retry tests only ever observed one
+    attempt, so they asserted call counts that could never be reached.
     """
-    try:
-        return deliver_webhook.apply(args=args).get()
-    except Retry:
-        return None
+    for retries in range(_MAX_EAGER_ATTEMPTS):
+        try:
+            return deliver_webhook.apply(args=args, retries=retries).get()
+        except Retry:
+            continue
+    raise AssertionError(
+        f"deliver_webhook was still retrying after {_MAX_EAGER_ATTEMPTS} attempts; "
+        "either max_retries is not being honoured or the attempt cap is too low."
+    )
 
 
 @responses.activate
@@ -156,7 +175,11 @@ def test_connection_error_is_retried(monkeypatch):
     _run(endpoint.pk, "COURSE_PASSING_STATUS_UPDATED", RAW_PAYLOAD, _correlation_id())
 
     assert call_count["n"] == 2
-    attempts = list(WebhookDeliveryAttempt.objects.filter(endpoint=endpoint))
+    # Order explicitly: the model defaults to ["-created"] (newest first), so an
+    # unordered [-1] picks the *first* attempt rather than the last.
+    attempts = list(
+        WebhookDeliveryAttempt.objects.filter(endpoint=endpoint).order_by("attempt_number")
+    )
     assert attempts[-1].status == WebhookDeliveryAttempt.Status.EXHAUSTED
     assert "boom" in attempts[-1].error_message
 

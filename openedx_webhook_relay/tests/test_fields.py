@@ -76,6 +76,8 @@ def test_invalid_encryption_key_raises(field):
 
 def test_mask_secret():
     assert mask_secret("") == ""
-    assert mask_secret("abcd").endswith("abcd")
+    # Secrets of 4 chars or fewer reveal only the last character: showing the
+    # last 4 of a 4-char secret would disclose the whole thing.
+    assert mask_secret("abcd") == f"{'•' * 8}d"
     assert mask_secret("a-very-long-secret").endswith("cret")
     assert mask_secret("a-very-long-secret").startswith("•" * 8)
