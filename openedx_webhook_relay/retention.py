@@ -10,7 +10,6 @@ out of sync on what "old" means or which rows are eligible.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from django.conf import settings
 from django.utils import timezone
@@ -28,22 +27,26 @@ class PurgeResult:
     deleted: int
     cutoff: "timezone.datetime"
     days: int
-    status_filter: Optional[str] = None
+    status_filter: str | None = None
 
     @property
     def is_dry_run(self) -> bool:
+        """True when rows matched the filter but none were deleted."""
         return self.matched > 0 and self.deleted == 0
 
 
-def resolve_retention_days(days: Optional[int] = None) -> int:
+def resolve_retention_days(days: int | None = None) -> int:
+    """Return ``days`` if given, else the configured retention period."""
     if days is not None:
         return days
-    return getattr(settings, "OPENEDX_WEBHOOK_RELAY_AUDIT_RETENTION_DAYS", DEFAULT_RETENTION_DAYS)
+    return getattr(
+        settings, "OPENEDX_WEBHOOK_RELAY_AUDIT_RETENTION_DAYS", DEFAULT_RETENTION_DAYS
+    )
 
 
 def purge_old_delivery_attempts(
-    days: Optional[int] = None,
-    status: Optional[str] = None,
+    days: int | None = None,
+    status: str | None = None,
     dry_run: bool = True,
 ) -> PurgeResult:
     """

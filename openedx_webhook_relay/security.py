@@ -9,7 +9,7 @@ unit test exhaustively and safe to call from both the synchronous receiver
 import hashlib
 import hmac
 import json
-from typing import Any, Optional
+from typing import Any
 
 
 def sign_payload(payload_bytes: bytes, secret: str) -> str:
@@ -36,7 +36,7 @@ def verify_signature(payload_bytes: bytes, secret: str, received_signature: str)
     return hmac.compare_digest(expected, received_signature)
 
 
-def _event_data_key(payload: dict) -> Optional[str]:
+def _event_data_key(payload: dict) -> str | None:
     """Return the dynamic openedx-events data key (non-metadata top-level key)."""
     for key in payload:
         if key != "event_metadata":
@@ -87,6 +87,9 @@ def delete_nested_path(root, dotted_path: str) -> None:
 
 
 def apply_allowlist(payload: dict, allowlist: list) -> dict:
+    # One branch per supported path form; splitting them up would scatter the
+    # allowlist semantics across helpers without simplifying them.
+    # pylint: disable=too-many-branches
     """
     Keep only configured paths in the outbound payload.
 
@@ -162,7 +165,11 @@ def apply_allowlist(payload: dict, allowlist: list) -> dict:
 
 
 def apply_denylist(payload: dict, denylist: list) -> None:
-    """Remove configured paths from the payload (mutates in place). See apply_allowlist for path syntax."""
+    """
+    Remove configured paths from the payload (mutates in place).
+
+    See ``apply_allowlist`` for the path syntax.
+    """
     data_key = _event_data_key(payload)
 
     for path in denylist:
@@ -200,7 +207,7 @@ def should_send_passing_event(payload: dict, only_on_passing: bool) -> bool:
     if not only_on_passing:
         return True
 
-    for _key, value in payload.items():
+    for value in payload.values():
         if not isinstance(value, dict):
             continue
         is_passing = value.get("is_passing")

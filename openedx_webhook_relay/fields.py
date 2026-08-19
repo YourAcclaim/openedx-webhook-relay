@@ -79,6 +79,10 @@ class EncryptedCharField(models.CharField):
         super().__init__(*args, **kwargs)
 
     def get_prep_value(self, value):
+        """Encrypt ``value`` on its way to the database."""
+        # pylint-django does not resolve CharField.get_prep_value through the
+        # Field/CharField MRO, so it reports a false no-member here.
+        # pylint: disable=no-member
         value = super().get_prep_value(value)
         if value in (None, ""):
             return value
@@ -89,6 +93,7 @@ class EncryptedCharField(models.CharField):
         return f"{_ENCRYPTED_PREFIX}{token}"
 
     def from_db_value(self, value, expression, connection):  # pylint: disable=unused-argument
+        """Decrypt ``value`` as it is loaded from the database."""
         if value in (None, ""):
             return value
         if not value.startswith(_ENCRYPTED_PREFIX):

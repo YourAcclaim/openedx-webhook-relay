@@ -1,5 +1,7 @@
 """Tests for the metrics/alerting hook."""
 
+# pylint: disable=missing-function-docstring
+
 from django.test import override_settings
 
 from openedx_webhook_relay.metrics import emit_delivery_metric, webhook_delivery_recorded

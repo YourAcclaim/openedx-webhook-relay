@@ -29,6 +29,8 @@ from openedx_webhook_relay.retention import purge_old_delivery_attempts
 
 
 class Command(BaseCommand):
+    """Delete delivery-attempt audit rows past the retention window."""
+
     help = "Delete WebhookDeliveryAttempt rows older than a retention window."
 
     def add_arguments(self, parser):

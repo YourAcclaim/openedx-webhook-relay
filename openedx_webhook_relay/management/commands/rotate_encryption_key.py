@@ -32,11 +32,15 @@ from openedx_webhook_relay.models import WebhookEndpoint
 
 
 class Command(BaseCommand):
+    """Re-encrypt stored signing secrets under a new Fernet key."""
+
     help = "Re-encrypt all WebhookEndpoint signing secrets under a new encryption key."
 
     def add_arguments(self, parser):
         parser.add_argument("--old-key", required=True, help="Current Fernet key (base64).")
-        parser.add_argument("--new-key", required=True, help="New Fernet key (base64) to rotate to.")
+        parser.add_argument(
+            "--new-key", required=True, help="New Fernet key (base64) to rotate to."
+        )
         parser.add_argument(
             "--dry-run", action="store_true", help="Report what would change without saving."
         )

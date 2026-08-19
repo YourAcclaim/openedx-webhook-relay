@@ -1,5 +1,7 @@
 """Tests for the rotate_encryption_key management command."""
 
+# pylint: disable=missing-function-docstring
+
 from io import StringIO
 
 import pytest
@@ -42,7 +44,9 @@ def test_rotate_encryption_key_dry_run_changes_nothing(settings):
     endpoint = WebhookEndpointFactory(signing_secret="current-secret")
 
     out = StringIO()
-    call_command("rotate_encryption_key", old_key=old_key, new_key=new_key, dry_run=True, stdout=out)
+    call_command(
+        "rotate_encryption_key", old_key=old_key, new_key=new_key, dry_run=True, stdout=out
+    )
 
     assert "Dry run" in out.getvalue()
     endpoint.refresh_from_db()

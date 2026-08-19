@@ -1,5 +1,7 @@
 """Tests for the rotate_signing_secret management command."""
 
+# pylint: disable=missing-function-docstring
+
 from io import StringIO
 
 import pytest

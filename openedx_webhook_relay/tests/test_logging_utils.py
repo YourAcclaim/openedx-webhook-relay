@@ -1,5 +1,7 @@
 """Tests for the JSON log formatter."""
 
+# pylint: disable=missing-class-docstring,missing-function-docstring
+
 import io
 import json
 import logging

@@ -1,5 +1,7 @@
 """Tests for the purge_old_delivery_attempts management command."""
 
+# pylint: disable=missing-function-docstring
+
 from datetime import timedelta
 from io import StringIO
 

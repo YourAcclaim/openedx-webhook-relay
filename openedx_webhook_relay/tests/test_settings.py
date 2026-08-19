@@ -3,6 +3,8 @@ Tests for openedx_webhook_relay/settings/common.py's Celery beat schedule
 wiring (docs/decisions/0010-scheduled-retention-purge.rst).
 """
 
+# pylint: disable=missing-class-docstring,missing-function-docstring
+
 from celery.schedules import crontab
 
 from openedx_webhook_relay.settings.common import plugin_settings

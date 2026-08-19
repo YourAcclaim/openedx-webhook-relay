@@ -11,6 +11,8 @@ negative. ``.apply()`` (which is what ``.delay()`` reduces to under
 ``CELERY_TASK_ALWAYS_EAGER``) exercises the real retry path.
 """
 
+# pylint: disable=missing-function-docstring
+
 import uuid
 from datetime import timedelta
 
@@ -138,6 +140,7 @@ def test_retryable_failure_retries_then_exhausts():
 
 @responses.activate
 def test_connection_error_is_retried(monkeypatch):
+    # pylint: disable=import-outside-toplevel
     import requests
 
     endpoint = WebhookEndpointFactory(max_retries=2)
@@ -214,7 +217,9 @@ def test_payload_fingerprint_is_recorded():
 
 @responses.activate
 def test_previous_secret_produces_second_signature_header():
-    endpoint = WebhookEndpointFactory(signing_secret="new-secret", signing_secret_previous="old-secret")
+    endpoint = WebhookEndpointFactory(
+        signing_secret="new-secret", signing_secret_previous="old-secret"
+    )
     responses.add(responses.POST, endpoint.webhook_url, status=200)
 
     _run(endpoint.pk, "COURSE_PASSING_STATUS_UPDATED", RAW_PAYLOAD, _correlation_id())
@@ -295,7 +300,9 @@ def test_half_open_trial_failure_reopens_circuit_and_still_resolves():
 
     # Both attempts of the trial actually ran (not short-circuited).
     assert len(responses.calls) == 2
-    attempts = list(WebhookDeliveryAttempt.objects.filter(endpoint=endpoint).order_by("attempt_number"))
+    attempts = list(
+        WebhookDeliveryAttempt.objects.filter(endpoint=endpoint).order_by("attempt_number")
+    )
     assert [a.status for a in attempts] == [
         WebhookDeliveryAttempt.Status.RETRYING,
         WebhookDeliveryAttempt.Status.EXHAUSTED,

@@ -10,6 +10,8 @@ unexpected args, and ``responses.activate`` in test_tasks.py separately
 proves the task itself is what performs I/O).
 """
 
+# pylint: disable=missing-function-docstring
+
 from unittest import mock
 
 import attr

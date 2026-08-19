@@ -1,5 +1,7 @@
 """Tests for the redeliver_failed_webhooks management command."""
 
+# pylint: disable=missing-function-docstring
+
 import json
 from io import StringIO
 from unittest import mock

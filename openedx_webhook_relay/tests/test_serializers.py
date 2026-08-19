@@ -1,5 +1,7 @@
 """Unit tests for openedx-events payload serialization."""
 
+# pylint: disable=missing-class-docstring,missing-function-docstring
+
 from opaque_keys.edx.keys import CourseKey
 from xblock.fields import ScopeIds
 

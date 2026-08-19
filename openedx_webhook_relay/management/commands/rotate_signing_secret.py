@@ -25,6 +25,8 @@ from openedx_webhook_relay.secrets_backend import DatabaseSecretBackend, get_sec
 
 
 class Command(BaseCommand):
+    """Rotate an endpoint's signing secret, optionally keeping the previous one."""
+
     help = "Rotate (or finish rotating) a WebhookEndpoint's signing secret."
 
     def add_arguments(self, parser):
@@ -36,7 +38,10 @@ class Command(BaseCommand):
         parser.add_argument(
             "--clear-previous",
             action="store_true",
-            help="Stop sending the previous secret's signature; use once the receiver has cut over.",
+            help=(
+                "Stop sending the previous secret's signature; use once the receiver "
+                "has cut over."
+            ),
         )
         parser.add_argument(
             "--no-keep-previous",
@@ -71,10 +76,16 @@ class Command(BaseCommand):
                     endpoint.signing_secret_previous = old_secret
 
             backend.set_secret(endpoint, new_secret)
-            self.stdout.write(self.style.SUCCESS(f"Set new signing secret for endpoint {endpoint.pk}."))
+            self.stdout.write(
+                self.style.SUCCESS(f"Set new signing secret for endpoint {endpoint.pk}.")
+            )
 
         if clear_previous:
             endpoint.signing_secret_previous = ""
-            self.stdout.write(self.style.SUCCESS(f"Cleared previous signing secret for endpoint {endpoint.pk}."))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Cleared previous signing secret for endpoint {endpoint.pk}."
+                )
+            )
 
         endpoint.save()

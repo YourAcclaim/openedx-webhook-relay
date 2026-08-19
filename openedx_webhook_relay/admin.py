@@ -54,6 +54,11 @@ class WebhookEndpointAdminForm(forms.ModelForm):
 
     class Meta:
         model = WebhookEndpoint
+        # The previous secret is surfaced read-only via previous_secret_status;
+        # every other model field is intentionally editable here, so `exclude`
+        # (rather than an explicit `fields` list needing manual upkeep) is the
+        # intended semantic.
+        # pylint: disable=modelform-uses-exclude
         exclude = ("signing_secret_previous",)
 
     def __init__(self, *args, **kwargs):
@@ -84,6 +89,8 @@ class WebhookEndpointAdminForm(forms.ModelForm):
 
 @admin.register(WebhookEndpoint)
 class WebhookEndpointAdmin(admin.ModelAdmin):
+    """Admin for webhook endpoints, with write-only secret handling."""
+
     form = WebhookEndpointAdminForm
     list_display = (
         "description",
@@ -131,7 +138,14 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
         ),
         (
             "Delivery",
-            {"fields": ("only_on_passing", "timeout_seconds", "max_retries", "retain_payload_snapshot")},
+            {
+                "fields": (
+                    "only_on_passing",
+                    "timeout_seconds",
+                    "max_retries",
+                    "retain_payload_snapshot",
+                )
+            },
         ),
         (
             "Circuit breaker",
@@ -152,21 +166,25 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
 
     @admin.display(description="Signing secret")
     def secret_status(self, obj):
+        """Masked current signing secret, or a dash for unsaved rows."""
         if not obj.pk:
             return "—"
         return obj.masked_secret
 
     @admin.display(description="Previous signing secret")
     def previous_secret_status(self, obj):
+        """Masked previous signing secret, or a dash for unsaved rows."""
         if not obj.pk:
             return "—"
         return obj.masked_previous_secret
 
     @admin.display(description="Circuit")
     def circuit_state_display(self, obj):
+        """Human-readable circuit-breaker state."""
         return obj.get_circuit_state_display()
 
     def save_model(self, request, obj, form, change):
+        """Route secret writes through the configured backend, rotating if asked."""
         backend = get_secret_backend()
         new_secret_provided = getattr(form, "_new_secret_provided", False)
         old_secret = getattr(form, "_old_secret_before_edit", "")
@@ -175,7 +193,11 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
         clear_previous = form.cleaned_data.get("clear_previous_signing_secret", False)
 
         if new_secret_provided:
-            if rotate_keeping_previous and old_secret and isinstance(backend, DatabaseSecretBackend):
+            if (
+                rotate_keeping_previous
+                and old_secret
+                and isinstance(backend, DatabaseSecretBackend)
+            ):
                 obj.signing_secret_previous = old_secret
             backend.set_secret(obj, form.cleaned_data.get("signing_secret", ""))
         elif clear:
@@ -240,6 +262,7 @@ class WebhookDeliveryAttemptAdmin(admin.ModelAdmin):
 
     @admin.display(description="Status")
     def status_badge(self, obj):
+        """Colour-coded delivery status for the changelist."""
         color = self.STATUS_COLORS.get(obj.status, "#57606a")
         return format_html(
             '<span style="color:{}; font-weight:600;">{}</span>', color, obj.get_status_display()
@@ -247,10 +270,12 @@ class WebhookDeliveryAttemptAdmin(admin.ModelAdmin):
 
     @admin.display(description="Snapshot", boolean=True)
     def has_snapshot(self, obj):
+        """True when a payload snapshot was retained for this attempt."""
         return obj.payload_snapshot is not None
 
     @admin.action(description="Requeue selected exhausted deliveries")
     def requeue_selected(self, request, queryset):
+        """Re-enqueue exhausted attempts that still have a payload snapshot."""
         exhausted = queryset.filter(status=WebhookDeliveryAttempt.Status.EXHAUSTED)
         requeued = 0
         skipped_no_snapshot = 0
@@ -268,7 +293,9 @@ class WebhookDeliveryAttemptAdmin(admin.ModelAdmin):
             requeued += 1
 
         if requeued:
-            self.message_user(request, f"Requeued {requeued} deliver(y/ies).", level=messages.SUCCESS)
+            self.message_user(
+                request, f"Requeued {requeued} deliver(y/ies).", level=messages.SUCCESS
+            )
         if skipped_no_snapshot:
             self.message_user(
                 request,

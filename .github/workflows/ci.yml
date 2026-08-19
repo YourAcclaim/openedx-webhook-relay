@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ['*']
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install quality requirements
+        run: pip install -r requirements/quality.in
+      - name: Ruff
+        run: ruff check openedx_webhook_relay
+      - name: isort
+        run: isort --check-only --diff openedx_webhook_relay
+      - name: Pylint
+        run: pylint openedx_webhook_relay
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+        django-version: ["4.2", "5.2"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install requirements
+        run: |
+          pip install "Django~=${{ matrix.django-version }}.0"
+          pip install -r requirements/test.in
+          pip install -e .
+      - name: Run tests with coverage
+        run: pytest --cov=openedx_webhook_relay --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}-${{ matrix.django-version }}
+          path: coverage.xml
