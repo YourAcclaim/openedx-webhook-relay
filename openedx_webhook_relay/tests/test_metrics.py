@@ -9,15 +9,24 @@ from openedx_webhook_relay.metrics import emit_delivery_metric, webhook_delivery
 
 def test_emit_delivery_metric_fires_signal():
     received = []
-    webhook_delivery_recorded.connect(received.append)
+
+    def _collect(sender, **kwargs):  # pylint: disable=unused-argument
+        received.append(kwargs)
+
+    # A bare ``received.append`` cannot serve as a receiver: Django invokes
+    # receivers with keyword arguments, and it would additionally be dropped
+    # early since receivers are held by weak reference by default.
+    webhook_delivery_recorded.connect(_collect, weak=False)
     try:
         emit_delivery_metric(
             status="succeeded", endpoint_id=1, event="COURSE_PASSING_STATUS_UPDATED",
             correlation_id="abc", http_status_code=200,
         )
     finally:
-        webhook_delivery_recorded.disconnect(received.append)
+        webhook_delivery_recorded.disconnect(_collect)
     assert len(received) == 1
+    assert received[0]["status"] == "succeeded"
+    assert received[0]["http_status_code"] == 200
 
 
 def test_emit_delivery_metric_survives_broken_signal_receiver():
