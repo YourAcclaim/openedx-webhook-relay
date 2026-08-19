@@ -1,0 +1,9 @@
+-c ../base.txt
+-r base.in
+
+pytest>=7.4.0
+pytest-django>=4.7.0
+pytest-cov>=4.1.0
+factory-boy>=3.3.0
+responses>=0.24.0
+freezegun>=1.4.0

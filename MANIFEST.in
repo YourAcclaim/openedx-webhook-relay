@@ -1,0 +1,3 @@
+include README.rst LICENSE.txt CHANGELOG.rst
+recursive-include openedx_webhook_relay *.py
+recursive-include requirements *.in

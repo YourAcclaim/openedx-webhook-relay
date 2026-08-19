@@ -1,0 +1,9 @@
+Django>=4.2
+django-model-utils>=4.3.1
+openedx-events>=9.5.0
+requests>=2.31.0
+edx-opaque-keys>=2.5.0
+XBlock>=1.8.0
+attrs>=23.0.0
+celery>=5.3.0
+cryptography>=42.0.0

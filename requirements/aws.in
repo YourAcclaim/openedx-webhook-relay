@@ -1,0 +1,4 @@
+# Optional: only needed if OPENEDX_WEBHOOK_RELAY_SECRET_BACKEND=aws_secrets_manager.
+# Not installed by default — see secrets_backend.py and
+# docs/decisions/0009-key-rotation-and-secret-backends.rst.
+boto3>=1.34.0

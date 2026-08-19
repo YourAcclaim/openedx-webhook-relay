@@ -1,0 +1,5 @@
+-r quality.in
+
+pip-tools>=7.4.0
+tox>=4.14.0
+pre-commit>=3.6.0
