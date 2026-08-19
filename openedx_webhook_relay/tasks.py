@@ -99,9 +99,13 @@ def _record_attempt(*, endpoint, event, correlation_id, attempt_number, status,
     this is opt-in and scoped that narrowly.
     """
     snapshot = None
-    if payload is not None and status == WebhookDeliveryAttempt.Status.EXHAUSTED:
-        if endpoint is not None and getattr(endpoint, "retain_payload_snapshot", False):
-            snapshot = payload
+    if (
+        payload is not None
+        and status == WebhookDeliveryAttempt.Status.EXHAUSTED
+        and endpoint is not None
+        and getattr(endpoint, "retain_payload_snapshot", False)
+    ):
+        snapshot = payload
 
     attempt = WebhookDeliveryAttempt.objects.create(
         endpoint_id=endpoint.pk if endpoint is not None else None,
@@ -340,7 +344,6 @@ def _fail_or_retry(task, endpoint, event, correlation_id, attempt_number, finger
             status=WebhookDeliveryAttempt.Status.EXHAUSTED, attempt_number=attempt_number,
         ),
     )
-    return None
 
 
 @shared_task

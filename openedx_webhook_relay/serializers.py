@@ -7,7 +7,7 @@ are JSON-serializable by default. This module converts them into plain
 dicts/lists/primitives.
 """
 
-from typing import Any, Union
+from typing import Any
 
 from opaque_keys import OpaqueKey
 from xblock.fields import ScopeIds
@@ -24,7 +24,7 @@ def scope_ids_serializer(scope_ids: ScopeIds) -> dict:
     }
 
 
-def object_serializer(obj: Any, depth: int = 0) -> Union[dict, list, Any]:
+def object_serializer(obj: Any, depth: int = 0) -> dict | list | Any:
     """Recursively serialize an Open edX event object to JSON-safe structures."""
     if depth > MAX_SERIALIZATION_DEPTH:
         return "! Depth limit reached !"

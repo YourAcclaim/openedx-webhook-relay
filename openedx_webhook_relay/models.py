@@ -192,7 +192,8 @@ class WebhookEndpoint(TimeStampedModel):
 
     def effective_secret(self) -> str:
         """Return the current signing secret via the configured secret backend."""
-        from openedx_webhook_relay.secrets_backend import get_secret_backend  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from openedx_webhook_relay.secrets_backend import get_secret_backend
 
         secret = get_secret_backend().get_secret(self)
         if secret:

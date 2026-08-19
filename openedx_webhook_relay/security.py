@@ -9,7 +9,7 @@ unit test exhaustively and safe to call from both the synchronous receiver
 import hashlib
 import hmac
 import json
-from typing import Any, Optional
+from typing import Any
 
 
 def sign_payload(payload_bytes: bytes, secret: str) -> str:
@@ -36,7 +36,7 @@ def verify_signature(payload_bytes: bytes, secret: str, received_signature: str)
     return hmac.compare_digest(expected, received_signature)
 
 
-def _event_data_key(payload: dict) -> Optional[str]:
+def _event_data_key(payload: dict) -> str | None:
     """Return the dynamic openedx-events data key (non-metadata top-level key)."""
     for key in payload:
         if key != "event_metadata":
@@ -200,7 +200,7 @@ def should_send_passing_event(payload: dict, only_on_passing: bool) -> bool:
     if not only_on_passing:
         return True
 
-    for _key, value in payload.items():
+    for value in payload.values():
         if not isinstance(value, dict):
             continue
         is_passing = value.get("is_passing")

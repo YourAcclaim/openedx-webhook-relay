@@ -5,8 +5,8 @@ from cryptography.fernet import Fernet
 from django.test import override_settings
 
 from openedx_webhook_relay.fields import (
-    SecretConfigurationError,
     EncryptedCharField,
+    SecretConfigurationError,
     mask_secret,
 )
 
@@ -57,15 +57,19 @@ def test_from_db_value_returns_empty_on_wrong_key(field):
 
 
 def test_missing_encryption_key_raises(field):
-    with override_settings(OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY=None):
-        with pytest.raises(SecretConfigurationError):
-            field.get_prep_value("value")
+    with (
+        override_settings(OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY=None),
+        pytest.raises(SecretConfigurationError),
+    ):
+        field.get_prep_value("value")
 
 
 def test_invalid_encryption_key_raises(field):
-    with override_settings(OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY="not-a-valid-fernet-key"):
-        with pytest.raises(SecretConfigurationError):
-            field.get_prep_value("value")
+    with (
+        override_settings(OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY="not-a-valid-fernet-key"),
+        pytest.raises(SecretConfigurationError),
+    ):
+        field.get_prep_value("value")
 
 
 def test_mask_secret():

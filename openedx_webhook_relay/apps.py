@@ -55,7 +55,8 @@ class OpenedxWebhookRelayConfig(AppConfig):
     def ready(self):
         # Import here (not at module load) so Celery task registration only
         # happens once Django apps are fully loaded, avoiding AppRegistryNotReady.
-        from openedx_webhook_relay import tasks  # noqa: F401  pylint: disable=unused-import,import-outside-toplevel
+        # pylint: disable=unused-import,import-outside-toplevel
+        from openedx_webhook_relay import tasks  # noqa: F401
 
         logger.info(
             "openedx_webhook_relay ready: relaying %s via async delivery",
