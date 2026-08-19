@@ -15,7 +15,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install quality requirements
-        run: pip install -r requirements/quality.in
+        # Pinned: lint results should not change because a dependency released.
+        run: pip install -r requirements/quality.txt
       - name: Ruff
         run: ruff check openedx_webhook_relay
       - name: isort
@@ -35,10 +36,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install requirements
+        # Pinned deps first, then override Django for this matrix leg. The reverse
+        # order lets the django== pin in test.txt silently upgrade the 4.2 leg
+        # to 5.2, so the leg would report green while testing the wrong version.
         run: |
+          pip install -r requirements/test.txt
           pip install "Django~=${{ matrix.django-version }}.0"
-          pip install -r requirements/test.in
           pip install -e .
+          python -c "import django; print('Django', django.get_version())"
       - name: Run tests with coverage
         run: pytest --cov=openedx_webhook_relay --cov-report=term-missing --cov-report=xml --cov-fail-under=90
       - name: Upload coverage
