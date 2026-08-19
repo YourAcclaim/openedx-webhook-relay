@@ -12,3 +12,14 @@ venv/
 htmlcov/
 coverage.xml
 .tox/
+
+# Local env / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# macOS / editors
+.DS_Store
+.idea/
+.vscode/

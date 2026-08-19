@@ -15,7 +15,7 @@ Production (pinned release, encryption key from a secrets manager — never
 commit a real key)::
 
     tutor config save \\
-      --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/credly/openedx-webhook-relay.git@v1.2.0' \\
+      --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/YourAcclaim/openedx-webhook-relay.git@v1.2.0' \\
       --set OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY="$(cat /run/secrets/webhook_relay_key)"
 
 Then, with this file enabled (``tutor plugins enable openedx-webhook-relay``)::
