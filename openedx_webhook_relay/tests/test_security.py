@@ -1,5 +1,7 @@
 """Unit tests for security helpers (signing, PII filtering, fingerprinting)."""
 
+# pylint: disable=missing-function-docstring
+
 import json
 
 from openedx_webhook_relay.security import (

@@ -31,13 +31,17 @@ class PurgeResult:
 
     @property
     def is_dry_run(self) -> bool:
+        """True when rows matched the filter but none were deleted."""
         return self.matched > 0 and self.deleted == 0
 
 
 def resolve_retention_days(days: int | None = None) -> int:
+    """Return ``days`` if given, else the configured retention period."""
     if days is not None:
         return days
-    return getattr(settings, "OPENEDX_WEBHOOK_RELAY_AUDIT_RETENTION_DAYS", DEFAULT_RETENTION_DAYS)
+    return getattr(
+        settings, "OPENEDX_WEBHOOK_RELAY_AUDIT_RETENTION_DAYS", DEFAULT_RETENTION_DAYS
+    )
 
 
 def purge_old_delivery_attempts(

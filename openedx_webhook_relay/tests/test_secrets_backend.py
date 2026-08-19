@@ -1,5 +1,7 @@
 """Tests for the pluggable secret backend."""
 
+# pylint: disable=invalid-name,missing-function-docstring
+
 import sys
 import types
 

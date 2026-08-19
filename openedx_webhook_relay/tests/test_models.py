@@ -1,5 +1,7 @@
 """Unit tests for WebhookEndpoint and WebhookDeliveryAttempt models."""
 
+# pylint: disable=missing-function-docstring
+
 from datetime import timedelta
 
 import pytest

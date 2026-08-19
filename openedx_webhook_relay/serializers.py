@@ -16,6 +16,7 @@ MAX_SERIALIZATION_DEPTH = 15
 
 
 def scope_ids_serializer(scope_ids: ScopeIds) -> dict:
+    """Serialize XBlock ``ScopeIds`` into a JSON-safe dict."""
     return {
         "block_type": scope_ids.block_type,
         "def_id": str(scope_ids.def_id),
@@ -26,6 +27,8 @@ def scope_ids_serializer(scope_ids: ScopeIds) -> dict:
 
 def object_serializer(obj: Any, depth: int = 0) -> dict | list | Any:
     """Recursively serialize an Open edX event object to JSON-safe structures."""
+    # Dispatching over many input types inherently needs many exits.
+    # pylint: disable=too-many-return-statements
     if depth > MAX_SERIALIZATION_DEPTH:
         return "! Depth limit reached !"
     if isinstance(obj, (int, float, str, bool)) or obj is None:

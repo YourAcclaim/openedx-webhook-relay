@@ -127,6 +127,8 @@ class WebhookEndpoint(TimeStampedModel):
     # `circuit_breaker_cooldown_seconds` have passed, at which point a single
     # trial delivery is allowed through (half-open) to test recovery.
     class CircuitState(models.TextChoices):
+        """Circuit-breaker states for an endpoint."""
+
         CLOSED = "closed", _("Closed (normal)")
         OPEN = "open", _("Open (skipping deliveries)")
         HALF_OPEN = "half_open", _("Half-open (trial delivery in flight)")
@@ -217,11 +219,16 @@ class WebhookEndpoint(TimeStampedModel):
     @property
     def masked_secret(self) -> str:
         """Display-safe representation for admin (never the plaintext secret)."""
-        return mask_secret(self.signing_secret) if self.signing_secret else _("(using default secret)")
+        if not self.signing_secret:
+            return _("(using default secret)")
+        return mask_secret(self.signing_secret)
 
     @property
     def masked_previous_secret(self) -> str:
-        return mask_secret(self.signing_secret_previous) if self.signing_secret_previous else _("(none)")
+        """Display-safe representation of the previous secret, if any."""
+        if not self.signing_secret_previous:
+            return _("(none)")
+        return mask_secret(self.signing_secret_previous)
 
     # --- Circuit breaker -----------------------------------------------
 
@@ -300,6 +307,8 @@ class WebhookDeliveryAttempt(TimeStampedModel):
     """
 
     class Status(models.TextChoices):
+        """Terminal and in-flight states for a delivery attempt."""
+
         SUCCEEDED = "succeeded", _("Succeeded")
         RETRYING = "retrying", _("Retrying")
         EXHAUSTED = "exhausted", _("Exhausted (needs attention)")

@@ -1,5 +1,7 @@
 """Shared pytest fixtures."""
 
+# pylint: disable=missing-function-docstring
+
 import pytest
 from celery import current_app
 
@@ -19,6 +21,8 @@ def _celery_eager():
 
 @pytest.fixture
 def webhook_endpoint(db):  # pylint: disable=unused-argument
+    # Imported lazily so factories load after the db fixture configures Django.
+    # pylint: disable=import-outside-toplevel
     from openedx_webhook_relay.tests.factories import WebhookEndpointFactory
 
     return WebhookEndpointFactory()

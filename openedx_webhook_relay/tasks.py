@@ -80,9 +80,13 @@ def _shape_and_check(raw_payload: dict, endpoint: WebhookEndpoint):
 
 
 def _backoff_seconds(attempt_number: int) -> int:
-    base = getattr(settings, "OPENEDX_WEBHOOK_RELAY_RETRY_BACKOFF_SECONDS", DEFAULT_RETRY_BACKOFF_SECONDS)
+    base = getattr(
+        settings, "OPENEDX_WEBHOOK_RELAY_RETRY_BACKOFF_SECONDS", DEFAULT_RETRY_BACKOFF_SECONDS
+    )
     ceiling = getattr(
-        settings, "OPENEDX_WEBHOOK_RELAY_RETRY_BACKOFF_MAX_SECONDS", DEFAULT_RETRY_BACKOFF_MAX_SECONDS
+        settings,
+        "OPENEDX_WEBHOOK_RELAY_RETRY_BACKOFF_MAX_SECONDS",
+        DEFAULT_RETRY_BACKOFF_MAX_SECONDS,
     )
     return min(base * (2 ** (attempt_number - 1)), ceiling)
 
@@ -98,6 +102,9 @@ def _record_attempt(*, endpoint, event, correlation_id, attempt_number, status,
     EXHAUSTED — see docs/decisions/0006-admin-bulk-redeliver.rst for why
     this is opt-in and scoped that narrowly.
     """
+    # One keyword-only parameter per audit column; grouping them into an object
+    # would only move the same fan-out to the call sites.
+    # pylint: disable=too-many-arguments
     snapshot = None
     if (
         payload is not None
@@ -151,6 +158,9 @@ def deliver_webhook(self, endpoint_id, event, raw_payload, correlation_id):
     endpoint's ``max_retries``. Does NOT retry 4xx (other than 429) —
     those indicate a misconfigured receiver that a retry won't fix.
     """
+    # A linear delivery path with several distinct early exits (disabled
+    # endpoint, open circuit, filtered payload, each failure mode).
+    # pylint: disable=too-many-locals,too-many-return-statements
     try:
         endpoint = WebhookEndpoint.objects.get(pk=endpoint_id, enabled=True)
     except WebhookEndpoint.DoesNotExist:
@@ -158,7 +168,10 @@ def deliver_webhook(self, endpoint_id, event, raw_payload, correlation_id):
             "deliver_webhook: endpoint %s no longer exists or is disabled; dropping.",
             endpoint_id,
             extra=_log_extra(
-                endpoint_id=endpoint_id, event=event, correlation_id=correlation_id, status="dropped"
+                endpoint_id=endpoint_id,
+                event=event,
+                correlation_id=correlation_id,
+                status="dropped",
             ),
         )
         return None
@@ -280,8 +293,11 @@ def deliver_webhook(self, endpoint_id, event, raw_payload, correlation_id):
             "correlation_id=%s",
             event, endpoint_id, response.status_code, correlation_id,
             extra=_log_extra(
-                endpoint_id=endpoint_id, event=event, correlation_id=correlation_id,
-                status=WebhookDeliveryAttempt.Status.EXHAUSTED, http_status_code=response.status_code,
+                endpoint_id=endpoint_id,
+                event=event,
+                correlation_id=correlation_id,
+                status=WebhookDeliveryAttempt.Status.EXHAUSTED,
+                http_status_code=response.status_code,
             ),
         )
         return None
@@ -303,6 +319,8 @@ def deliver_webhook(self, endpoint_id, event, raw_payload, correlation_id):
 def _fail_or_retry(task, endpoint, event, correlation_id, attempt_number, fingerprint, payload,
                     duration_ms, *, error_message, http_status_code, exc):
     """Record this failed attempt and either schedule a retry or mark it exhausted."""
+    # Threads the full delivery context through to the audit row.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     if attempt_number < endpoint.max_retries:
         _record_attempt(
             endpoint=endpoint,

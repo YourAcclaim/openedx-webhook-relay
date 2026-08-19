@@ -1,5 +1,7 @@
 """Unit tests for EncryptedCharField."""
 
+# pylint: disable=missing-function-docstring,redefined-outer-name
+
 import pytest
 from cryptography.fernet import Fernet
 from django.test import override_settings

@@ -3,6 +3,8 @@ Tests for the scheduled ``purge_old_delivery_attempts_task`` Celery task
 (docs/decisions/0010-scheduled-retention-purge.rst).
 """
 
+# pylint: disable=missing-function-docstring
+
 from datetime import timedelta
 
 import pytest

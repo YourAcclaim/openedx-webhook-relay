@@ -4,10 +4,17 @@ django-settings-module=openedx_webhook_relay.tests.settings
 ignore=migrations
 
 [MESSAGES CONTROL]
+# too-many-ancestors: Django's Model and ModelAdmin base chains are 9 deep on
+#   their own. The count reflects the framework, not this code.
+# cyclic-import: apps -> tasks -> models only "cycles" through imports that are
+#   deliberately deferred into function bodies (see the import-outside-toplevel
+#   pragmas), so there is no import-time cycle to break.
 disable=
     missing-module-docstring,
     duplicate-code,
-    too-few-public-methods
+    too-few-public-methods,
+    too-many-ancestors,
+    cyclic-import
 
 [FORMAT]
 max-line-length=100

@@ -87,6 +87,9 @@ def delete_nested_path(root, dotted_path: str) -> None:
 
 
 def apply_allowlist(payload: dict, allowlist: list) -> dict:
+    # One branch per supported path form; splitting them up would scatter the
+    # allowlist semantics across helpers without simplifying them.
+    # pylint: disable=too-many-branches
     """
     Keep only configured paths in the outbound payload.
 
@@ -162,7 +165,11 @@ def apply_allowlist(payload: dict, allowlist: list) -> dict:
 
 
 def apply_denylist(payload: dict, denylist: list) -> None:
-    """Remove configured paths from the payload (mutates in place). See apply_allowlist for path syntax."""
+    """
+    Remove configured paths from the payload (mutates in place).
+
+    See ``apply_allowlist`` for the path syntax.
+    """
     data_key = _event_data_key(payload)
 
     for path in denylist:

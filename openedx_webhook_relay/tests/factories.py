@@ -1,5 +1,7 @@
 """Test factories."""
 
+# pylint: disable=missing-class-docstring
+
 import factory
 
 from openedx_webhook_relay.models import WebhookDeliveryAttempt, WebhookEndpoint

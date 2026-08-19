@@ -29,6 +29,8 @@ from openedx_webhook_relay.tasks import deliver_webhook
 
 
 class Command(BaseCommand):
+    """Requeue exhausted webhook deliveries from a payload file."""
+
     help = "List or requeue EXHAUSTED webhook delivery attempts."
 
     def add_arguments(self, parser):
@@ -78,7 +80,11 @@ class Command(BaseCommand):
             )
 
         if not options.get("requeue"):
-            self.stdout.write(self.style.WARNING("Dry run. Pass --requeue --payload-file=... to redeliver."))
+            self.stdout.write(
+                self.style.WARNING(
+                    "Dry run. Pass --requeue --payload-file=... to redeliver."
+                )
+            )
             return
 
         payload_file = options.get("payload_file")

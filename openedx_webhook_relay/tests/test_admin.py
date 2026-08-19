@@ -3,6 +3,8 @@ Tests for admin: secret masking/write-only behavior and the read-only
 delivery-attempt audit view.
 """
 
+# pylint: disable=invalid-name,missing-function-docstring,redefined-outer-name
+
 from unittest import mock
 
 import pytest
@@ -183,7 +185,9 @@ def test_save_model_discards_old_secret_when_not_keeping_previous():
 
 
 def test_save_model_clear_previous_checkbox_clears_it():
-    endpoint = WebhookEndpointFactory(signing_secret="current", signing_secret_previous="stale-old-secret")
+    endpoint = WebhookEndpointFactory(
+        signing_secret="current", signing_secret_previous="stale-old-secret"
+    )
     form = WebhookEndpointAdminForm(
         data=_base_form_data(clear_previous_signing_secret="on"),
         instance=endpoint,

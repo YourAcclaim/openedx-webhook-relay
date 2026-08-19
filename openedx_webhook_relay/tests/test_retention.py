@@ -4,6 +4,8 @@ Tests for the shared retention logic in ``retention.py``, used by both the
 ``tasks.purge_old_delivery_attempts_task``.
 """
 
+# pylint: disable=missing-function-docstring
+
 from datetime import timedelta
 
 import pytest
