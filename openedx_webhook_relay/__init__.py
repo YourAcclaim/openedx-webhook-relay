@@ -9,4 +9,4 @@ Originally built for Credly badge integrations; kept event-agnostic so any
 consumer can register a :class:`~openedx_webhook_relay.models.WebhookEndpoint`.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"

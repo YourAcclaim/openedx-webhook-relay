@@ -16,10 +16,14 @@ from io import StringIO
 
 import pytest
 from cryptography.fernet import Fernet
+from django.conf import settings as django_settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import override_settings
 
+from openedx_webhook_relay.management.commands.rotate_encryption_key import (
+    using_encryption_key,
+)
 from openedx_webhook_relay.models import WebhookEndpoint
 from openedx_webhook_relay.tests.factories import WebhookEndpointFactory
 
@@ -203,3 +207,34 @@ def test_key_file_contents_are_stripped(settings, tmp_path):
 def test_missing_both_forms_is_rejected():
     with pytest.raises(CommandError):
         call_command("rotate_encryption_key", stdout=StringIO())
+
+
+def test_using_encryption_key_restores_the_previous_value(settings):
+    original = settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY
+    other = Fernet.generate_key().decode("utf-8")
+
+    with using_encryption_key(other):
+        assert django_settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY == other
+
+    assert django_settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY == original
+
+
+def test_using_encryption_key_restores_on_exception(settings):
+    original = settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY
+    other = Fernet.generate_key().decode("utf-8")
+
+    with pytest.raises(RuntimeError), using_encryption_key(other):
+        raise RuntimeError("boom")
+
+    assert django_settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY == original
+
+
+def test_using_encryption_key_removes_a_setting_that_did_not_exist(settings):
+    """When the setting was absent, it must be deleted again rather than left behind."""
+    del settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY
+    key = Fernet.generate_key().decode("utf-8")
+
+    with using_encryption_key(key):
+        assert django_settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY == key
+
+    assert not hasattr(django_settings, "OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY")
