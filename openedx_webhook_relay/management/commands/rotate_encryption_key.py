@@ -7,9 +7,17 @@ See docs/decisions/0003-secret-storage.rst and 0009-key-rotation.rst.
 Usage::
 
     ./manage.py rotate_encryption_key \\
-        --old-key="$(cat old.key)" \\
-        --new-key="$(cat new.key)" \\
+        --old-key-file=old.key \\
+        --new-key-file=new.key \\
         [--dry-run]
+
+The keys are read from files rather than accepted as plain arguments so they
+do not end up in shell history or process listings — matching
+``rotate_signing_secret --new-secret-file``. The inline ``--old-key`` /
+``--new-key`` forms are still accepted for backwards compatibility, but note
+they must be written as ``--old-key=<key>``: Fernet keys are urlsafe base64
+and roughly 1.5% of them begin with ``-``, which argparse would otherwise
+read as the start of another option.
 
 Then update the deployment's OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY setting
 to the new key and restart. Doing it in this order (rewrite rows, then
@@ -24,6 +32,8 @@ secrets live outside this database and are unaffected by this command —
 rotate them via that backend's own tooling.
 """
 
+from pathlib import Path
+
 from cryptography.fernet import Fernet, InvalidToken
 from django.core.management.base import BaseCommand, CommandError
 from django.test.utils import override_settings
@@ -37,20 +47,47 @@ class Command(BaseCommand):
     help = "Re-encrypt all WebhookEndpoint signing secrets under a new encryption key."
 
     def add_arguments(self, parser):
-        parser.add_argument("--old-key", required=True, help="Current Fernet key (base64).")
-        parser.add_argument(
-            "--new-key", required=True, help="New Fernet key (base64) to rotate to."
-        )
+        for name, described in (("old", "Current"), ("new", "New")):
+            group = parser.add_mutually_exclusive_group(required=True)
+            group.add_argument(
+                f"--{name}-key-file",
+                help=f"Path to a file containing the {described.lower()} Fernet key. "
+                "Preferred: keeps the key out of shell history and process listings.",
+            )
+            group.add_argument(
+                f"--{name}-key",
+                help=f"{described} Fernet key (base64). Visible in shell history and `ps` "
+                f"output, so prefer --{name}-key-file. Must be written as "
+                f"--{name}-key=<key>, since Fernet keys may begin with '-'.",
+            )
         parser.add_argument(
             "--dry-run", action="store_true", help="Report what would change without saving."
         )
 
+    def _resolve_key(self, options, name):
+        """
+        Return the ``name`` ("old"/"new") key from its file, else the inline option.
+
+        argparse guarantees exactly one of the pair is set.
+        """
+        path = options.get(f"{name}_key_file")
+        if not path:
+            return options[f"{name}_key"], f"--{name}-key"
+
+        try:
+            key = Path(path).read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            raise CommandError(f"Could not read --{name}-key-file {path!r}: {exc}") from exc
+        if not key:
+            raise CommandError(f"--{name}-key-file {path!r} is empty.")
+        return key, f"--{name}-key-file"
+
     def handle(self, *args, **options):
-        old_key = options["old_key"]
-        new_key = options["new_key"]
+        old_key, old_label = self._resolve_key(options, "old")
+        new_key, new_label = self._resolve_key(options, "new")
         dry_run = options["dry_run"]
 
-        for label, key in (("--old-key", old_key), ("--new-key", new_key)):
+        for label, key in ((old_label, old_key), (new_label, new_key)):
             try:
                 Fernet(key.encode("utf-8") if isinstance(key, str) else key)
             except (ValueError, TypeError) as exc:
@@ -75,7 +112,7 @@ class Command(BaseCommand):
         if decrypt_errors:
             raise CommandError(
                 f"Failed to decrypt secrets for endpoint id(s) {decrypt_errors} with "
-                "--old-key. Double check the key before proceeding — nothing was written."
+                f"{old_label}. Double check the key before proceeding — nothing was written."
             )
 
         self.stdout.write(f"{len(endpoints)} endpoint(s) have a secret to re-encrypt.")
@@ -90,7 +127,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Re-encrypted {len(endpoints)} endpoint(s). Now update "
-                "OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY to --new-key in your deployment "
+                "OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY to the new key in your deployment "
                 "configuration and restart."
             )
         )
