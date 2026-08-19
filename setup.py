@@ -43,7 +43,7 @@ setup(
     long_description=README,
     long_description_content_type="text/x-rst",
     author="Pearson / Credly",
-    url="https://github.com/credly/openedx-webhook-relay",
+    url="https://github.com/YourAcclaim/openedx-webhook-relay",
     packages=find_packages(exclude=["*tests*"]),
     include_package_data=True,
     install_requires=load_requirements("requirements/base.in"),

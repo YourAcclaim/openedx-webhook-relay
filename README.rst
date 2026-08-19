@@ -59,7 +59,7 @@ Installation (Tutor)
 ::
 
   tutor config save \
-    --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/credly/openedx-webhook-relay.git@v1.2.0'
+    --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/YourAcclaim/openedx-webhook-relay.git@v1.2.0'
 
 Or for local development::
 
