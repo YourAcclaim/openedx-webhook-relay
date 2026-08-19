@@ -32,13 +32,42 @@ secrets live outside this database and are unaffected by this command —
 rotate them via that backend's own tooling.
 """
 
+from contextlib import contextmanager
 from pathlib import Path
 
 from cryptography.fernet import Fernet, InvalidToken
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.test.utils import override_settings
 
 from openedx_webhook_relay.models import WebhookEndpoint
+
+_KEY_SETTING = "OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY"
+_MISSING = object()
+
+
+@contextmanager
+def using_encryption_key(key):
+    """
+    Temporarily resolve ``_KEY_SETTING`` to ``key``.
+
+    ``EncryptedCharField`` looks the key up per call (``fields._get_fernet``),
+    so reassigning the setting is enough to control which key encrypts or
+    decrypts a given row.
+
+    Deliberately not ``django.test.utils.override_settings``: that is test
+    scaffolding, and it broadcasts ``setting_changed`` to every installed app,
+    which is an unwanted side effect in a command that rewrites production
+    secrets.
+    """
+    previous = getattr(settings, _KEY_SETTING, _MISSING)
+    setattr(settings, _KEY_SETTING, key)
+    try:
+        yield
+    finally:
+        if previous is _MISSING:
+            delattr(settings, _KEY_SETTING)
+        else:
+            setattr(settings, _KEY_SETTING, previous)
 
 
 class Command(BaseCommand):
@@ -96,7 +125,7 @@ class Command(BaseCommand):
         # Force the query to execute now, while OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY
         # is overridden to the OLD key, so EncryptedCharField.from_db_value
         # decrypts every row's signing_secret with the right key up front.
-        with override_settings(OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY=old_key):
+        with using_encryption_key(old_key):
             # Any endpoint with a current or previous secret needs rewriting.
             endpoints = [
                 e for e in WebhookEndpoint.objects.all()
@@ -120,7 +149,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Dry run: no changes saved."))
             return
 
-        with override_settings(OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY=new_key):
+        with using_encryption_key(new_key):
             for endpoint in endpoints:
                 endpoint.save(update_fields=["signing_secret", "signing_secret_previous"])
 

@@ -10,6 +10,59 @@ Change Log
 Unreleased
 **********
 
+1.3.0 - 2026-08-19
+*******************
+
+Added
+=====
+
+* ``rotate_encryption_key`` accepts ``--old-key-file`` / ``--new-key-file``,
+  now the preferred way to supply keys: it keeps them out of shell history and
+  process listings, matching ``rotate_signing_secret --new-secret-file``. The
+  inline ``--old-key`` / ``--new-key`` options still work, but must be written
+  as ``--old-key=<key>`` — Fernet keys are urlsafe base64 and roughly 1.5% of
+  them begin with ``-``, which argparse would otherwise read as another
+  option. Missing or empty key files now fail with a clear error.
+* Compiled requirements (``requirements/*.txt``) are generated and committed,
+  completing the pip-compile workflow the Makefile always described. CI and
+  tox install from the pins; ``make upgrade`` re-pins them and must be run
+  under Python 3.11.
+
+Fixed
+=====
+
+* CI runs again. The workflow had been removed from the repository, so
+  ``main``'s required ``quality`` status check could never report and sat
+  pending indefinitely on every pull request.
+* ``requirements/test.in`` referenced a constraints file that did not exist,
+  aborting dependency installation before any linter or test ran. The path was
+  also wrong: ``-c ../base.txt`` resolved to the repository root.
+* Five tests that failed on every run. Three retry tests asserted HTTP call
+  counts that could not be reached, because Celery's eager mode invokes a task
+  once and propagates ``Retry`` rather than re-executing it — so retry and
+  exhaustion were never actually exercised until now. One read an unordered
+  queryset as though it were ordered, one used ``list.append`` as a signal
+  receiver, and one asserted that ``mask_secret`` echoes a 4-character secret
+  in full.
+* An intermittent failure in the ``rotate_encryption_key`` tests, from the same
+  leading-dash key issue described above (roughly 6% of runs).
+* ``tox`` failed in every environment, referencing compiled requirements files
+  that had never been committed.
+
+Changed
+=======
+
+* ``rotate_encryption_key`` no longer imports ``django.test.utils`` in
+  production code. Key swapping during re-encryption uses a local context
+  manager instead of ``override_settings``, which is test scaffolding and
+  broadcasts ``setting_changed`` to every installed app.
+* Ruff is configured (``ruff.toml``) to match the line length and migration
+  exclusions already declared for isort and pylint. Both linters and pylint
+  now pass cleanly.
+* ``security.py`` test coverage raised from 72% to 100%, covering every
+  allowlist and denylist path form — the code that decides which fields leave
+  the system. Overall coverage 98%.
+
 1.2.0 - 2026-08-18
 *******************
 
