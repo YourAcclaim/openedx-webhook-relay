@@ -10,6 +10,19 @@ Change Log
 Unreleased
 **********
 
+Removed
+=======
+
+* ``scripts/generate_encryption_key.sh``. It was never shipped in the installed
+  package (``setup.py`` uses ``find_packages()`` and ``scripts/`` is not a
+  package), so it did not exist on a deployed host, and it required
+  ``cryptography`` to be importable outside the LMS venv. README.rst now gives
+  the dependency-free equivalent: ``openssl rand -base64 32 | tr '+/' '-_'``.
+* ``retention.PurgeResult.is_dry_run``. Nothing read it — not the management
+  command, not the scheduled task — so it existed only to be asserted on. The
+  retention tests now assert the outcome (``matched``/``deleted`` and whether
+  rows survive) rather than a derived flag.
+
 1.3.0 - 2026-08-19
 *******************
 

@@ -32,7 +32,6 @@ def test_dry_run_counts_but_does_not_delete():
 
     assert result.matched == 1
     assert result.deleted == 0
-    assert result.is_dry_run
     assert WebhookDeliveryAttempt.objects.filter(pk=old.pk).exists()
 
 
@@ -45,7 +44,6 @@ def test_dry_run_false_actually_deletes():
 
     assert result.matched == 1
     assert result.deleted == 1
-    assert not result.is_dry_run
     assert not WebhookDeliveryAttempt.objects.filter(pk=old.pk).exists()
     assert WebhookDeliveryAttempt.objects.filter(pk=recent.pk).exists()
 

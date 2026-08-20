@@ -29,11 +29,6 @@ class PurgeResult:
     days: int
     status_filter: str | None = None
 
-    @property
-    def is_dry_run(self) -> bool:
-        """True when rows matched the filter but none were deleted."""
-        return self.matched > 0 and self.deleted == 0
-
 
 def resolve_retention_days(days: int | None = None) -> int:
     """Return ``days`` if given, else the configured retention period."""

@@ -172,22 +172,10 @@ rather than discovering it in admin::
   from openedx_webhook_relay.tasks import deliver_webhook; print('task :', deliver_webhook.name)
   "
 
-Installing from a private repository
-*************************************
-
-``git+https://`` needs credentials the image build does not have. Either embed
-a fine-grained read-only token in the URL — noting it is then written into
-``config.yml`` *and* the image layer history, so revoke it afterwards — or build
-a wheel and install it from a URL the build can reach::
-
-  python -m build --wheel
-  # upload the wheel, then reference it directly:
-  tutor config save --append OPENEDX_EXTRA_PIP_REQUIREMENTS='https://example.com/openedx_webhook_relay-1.3.0-py3-none-any.whl'
-
-A host path does not work: ``./openedx-webhook-relay`` resolves to ``/`` inside
-the container, ``/openedx/requirements/`` does not exist in Tutor v22, and
-``tutor mounts add`` on an arbitrary directory passes a build context that no
-``COPY`` instruction consumes. All three fail with *Distribution not found*.
+**8. Decide how the audit trail gets purged.** The plugin registers a beat
+entry, but a stock Tutor deployment has no beat scheduler to run it. See
+`Audit trail retention`_ — this is a decision, and skipping it means the table
+grows unbounded with nothing reporting a problem.
 
 Required Django settings
 *************************
@@ -302,14 +290,49 @@ Rotate the database encryption key::
   # promptly: until you do, the rows are encrypted with a key the running
   # process does not have.
 
-Audit trail retention is registered on Celery beat (daily, 03:17 UTC by
-default — see ADR 0010). **A beat scheduler has to be running for that to
-happen.** Tutor ships no beat container, so on a stock Tutor deployment the
-schedule entry exists, nothing reads it, and the table grows without limit.
-Either add a beat service, or set
-``OPENEDX_WEBHOOK_RELAY_AUTO_PURGE_ENABLED = False`` and schedule it yourself::
+Audit trail retention
+**********************
+
+Every delivery attempt writes a ``WebhookDeliveryAttempt`` row, so this table
+only grows. The plugin registers a purge on Celery beat (daily at 03:17 UTC by
+default, configurable, see ADR 0010) and merges that entry into any existing
+``CELERY_BEAT_SCHEDULE`` rather than replacing it.
+
+.. warning::
+
+   **Registering a beat entry is not the same as running it.** A beat
+   *scheduler* process has to be running to dispatch scheduled tasks, and a
+   stock Tutor deployment does not have one — Tutor ships ``lms`` and
+   ``lms-worker``, but no ``beat`` container. On such a deployment the schedule
+   entry exists, nothing ever reads it, and the audit table grows without
+   limit. Nothing reports a problem: there is no error, no warning, and no log
+   line, because from the plugin's point of view registration succeeded.
+
+Confirm what got registered::
+
+  ./manage.py shell -c "from django.conf import settings; print([k for k in settings.CELERY_BEAT_SCHEDULE if 'webhook-relay' in k])"
+
+Seeing ``openedx-webhook-relay-purge-old-delivery-attempts`` there tells you the
+entry is present, **not** that anything will run it. Check separately that a
+beat process exists.
+
+Pick one of two approaches:
+
+**Run beat.** Add a service running ``celery --app=lms.celery beat`` (for Tutor,
+a plugin patching ``local-docker-compose-services``) and leave
+``OPENEDX_WEBHOOK_RELAY_AUTO_PURGE_ENABLED`` at its default of ``True``.
+Scheduling then lives with the deployment.
+
+**Or schedule it yourself.** Set
+``OPENEDX_WEBHOOK_RELAY_AUTO_PURGE_ENABLED = False`` so the plugin stops
+registering an entry nothing honours, and drive the command from cron or your
+scheduler of choice::
 
   ./manage.py purge_old_delivery_attempts --days=90 --yes
+
+Run it once by hand first — it is also how you do a one-off cleanup or a
+non-default window. Doing neither is the third option, and it is the one that
+quietly fills a disk.
 
 Development
 ************
