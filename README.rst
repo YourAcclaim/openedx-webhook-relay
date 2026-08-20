@@ -13,6 +13,49 @@ breaker, a delivery audit trail, and encrypted-at-rest (or externally
 managed) secrets. See ``docs/decisions/`` for the reasoning behind each
 design choice.
 
+How a delivery flows
+*********************
+
+The split between processes is the thing worth understanding: the receiver runs
+inline on whatever thread emitted the signal, and every network call happens
+later, in a Celery worker.
+
+::
+
+  COURSE_PASSING_STATUS_UPDATED          (openedx-events signal)
+             |
+             v
+  +-- lms or lms-worker ------------------------------------+
+  |  receivers.py, synchronous on the emitting thread       |
+  |    - one indexed query for enabled endpoints            |
+  |    - enqueue one task per match; no network I/O here    |
+  +---------------------------+-----------------------------+
+                              |  deliver_webhook.delay(...)
+                              |  one correlation_id per event
+                              v
+                    Celery broker (Redis)
+                              |
+                              v
+  +-- lms-worker -------------------------------------------+
+  |  tasks.deliver_webhook                                  |
+  |    1. circuit breaker: skip while open                  |
+  |    2. only_on_passing filter                            |
+  |    3. PII allowlist / denylist                          |
+  |    4. HMAC-SHA256 sign -> X-OpenEdX-Webhook-Signature   |
+  |    5. POST with timeout; retry 5xx/429/network          |
+  |    6. write WebhookDeliveryAttempt + metrics signal     |
+  +---------------------------+-----------------------------+
+                              v
+                  your receiver (https only)
+
+Two consequences of that shape:
+
+* **No Celery worker means nothing is ever delivered.** The receiver still
+  enqueues successfully and logs that it did, so the LMS looks healthy.
+* **A successful delivery logs nothing.** Only failures, skips and exhaustion
+  are logged; the audit trail (``WebhookDeliveryAttempt``) is the record of
+  success. Follow one event across its retries by its ``correlation_id``.
+
 Features
 ********
 
@@ -56,21 +99,95 @@ Supported events
 Installation (Tutor)
 *********************
 
-::
+In this order. The encryption key has to be working *before* you create an
+endpoint, because storing the first signing secret is what first needs it.
+
+**1. Generate and set the encryption key.** A Fernet key is 32 random bytes,
+urlsafe-base64 encoded, so no Python is required::
+
+  tutor config save --set OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY="$(openssl rand -base64 32 | tr '+/' '-_')"
+
+**2. Add a Tutor plugin to inject the setting.** ``settings/common.py``
+declares the setting but deliberately supplies no value, so something has to
+provide it. ``scripts/tutor_plugin_example.py`` in this repository is a
+documented copy; if you are installing from a package rather than a checkout,
+write it directly. The ``mkdir -p`` matters — without it the redirect fails
+silently::
+
+  mkdir -p "$(tutor plugins printroot)"
+  cat > "$(tutor plugins printroot)/openedx-webhook-relay.py" <<'EOF'
+  from tutor import hooks
+
+  hooks.Filters.ENV_PATCHES.add_item(
+      (
+          "openedx-lms-common-settings",
+          '''
+  OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY = "{{ OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY }}"
+  ''',
+      )
+  )
+
+  hooks.Filters.CONFIG_DEFAULTS.add_items(
+      [
+          ("OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY", ""),
+      ]
+  )
+  EOF
+
+  tutor plugins list | grep webhook-relay      # must appear before enabling
+  tutor plugins enable openedx-webhook-relay
+  tutor config save
+
+**3. Confirm the setting actually rendered.** Do not skip this. A key present
+in ``config.yml`` but missing from the rendered settings is the most common
+failure, and it surfaces much later as a 500 when saving an endpoint::
+
+  grep -rn OPENEDX_WEBHOOK_RELAY "$(tutor config printroot)/env/apps/openedx/settings/lms/"
+
+Empty output means the plugin is not being applied — revisit step 2.
+
+**4. Add the package**::
 
   tutor config save \
     --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/YourAcclaim/openedx-webhook-relay.git@v1.3.0'
 
-Or for local development::
-
-  tutor config save \
-    --append OPENEDX_EXTRA_PIP_REQUIREMENTS='/path/to/openedx-webhook-relay'
-
-Then rebuild and migrate::
+**5. Build, then reboot.** Use ``reboot``, not ``restart``:
+``docker compose restart`` reuses the existing container and its old image, and
+the symptom is ``No installed app with label 'openedx_webhook_relay'``::
 
   tutor images build openedx
-  tutor local restart
+  tutor local reboot
+
+**6. Migrate**::
+
   tutor local exec lms ./manage.py lms migrate openedx_webhook_relay
+
+**7. Verify.** There is no startup validation of the key, so check it here
+rather than discovering it in admin::
+
+  tutor local exec lms ./manage.py lms shell -c "
+  from django.conf import settings
+  print('key  :', repr(settings.OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY))
+  from openedx_webhook_relay.fields import _get_fernet; _get_fernet(); print('fernet: valid')
+  from openedx_webhook_relay.tasks import deliver_webhook; print('task :', deliver_webhook.name)
+  "
+
+Installing from a private repository
+*************************************
+
+``git+https://`` needs credentials the image build does not have. Either embed
+a fine-grained read-only token in the URL — noting it is then written into
+``config.yml`` *and* the image layer history, so revoke it afterwards — or build
+a wheel and install it from a URL the build can reach::
+
+  python -m build --wheel
+  # upload the wheel, then reference it directly:
+  tutor config save --append OPENEDX_EXTRA_PIP_REQUIREMENTS='https://example.com/openedx_webhook_relay-1.3.0-py3-none-any.whl'
+
+A host path does not work: ``./openedx-webhook-relay`` resolves to ``/`` inside
+the container, ``/openedx/requirements/`` does not exist in Tutor v22, and
+``tutor mounts add`` on an arbitrary directory passes a build context that no
+``COPY`` instruction consumes. All three fail with *Distribution not found*.
 
 Required Django settings
 *************************
@@ -79,11 +196,11 @@ Required Django settings
 
   # MUST be set from a secrets manager in deployment config — never commit
   # this. Generate with:
-  #   ./scripts/generate_encryption_key.sh
+  #   openssl rand -base64 32 | tr '+/' '-_'
   OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY = "<fernet-key>"
 
-See ``scripts/tutor_plugin_example.py`` for a documented reference Tutor
-plugin that wires this setting in from Tutor config instead of hardcoding it.
+This is the only setting with no usable default; everything below falls back to
+a sensible value. ``manage.py check`` fails if it is missing or malformed.
 
 Optional Django settings
 **************************
@@ -178,12 +295,19 @@ Rotate a signing secret without an atomic cutover::
 
 Rotate the database encryption key::
 
-  ./manage.py rotate_encryption_key --old-key="$(cat old.key)" --new-key="$(cat new.key)"
+  # Key files keep the keys out of shell history and process listings.
+  ./manage.py rotate_encryption_key --old-key-file=old.key --new-key-file=new.key --dry-run
+  ./manage.py rotate_encryption_key --old-key-file=old.key --new-key-file=new.key
   # then update OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY to the new key and redeploy
+  # promptly: until you do, the rows are encrypted with a key the running
+  # process does not have.
 
-Audit trail retention runs automatically via Celery beat (daily, 03:17 UTC
-by default — see ADR 0010). Run it manually for a one-off cleanup or a
-non-default window::
+Audit trail retention is registered on Celery beat (daily, 03:17 UTC by
+default — see ADR 0010). **A beat scheduler has to be running for that to
+happen.** Tutor ships no beat container, so on a stock Tutor deployment the
+schedule entry exists, nothing reads it, and the table grows without limit.
+Either add a beat service, or set
+``OPENEDX_WEBHOOK_RELAY_AUTO_PURGE_ENABLED = False`` and schedule it yourself::
 
   ./manage.py purge_old_delivery_attempts --days=90 --yes
 
