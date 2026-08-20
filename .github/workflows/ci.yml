@@ -23,10 +23,30 @@ jobs:
         run: isort --check-only --diff openedx_webhook_relay
       - name: Pylint
         run: pylint openedx_webhook_relay
+      - name: pre-commit
+        # Hook versions are pinned to match quality.txt, so this agrees with the
+        # three checks above instead of fighting them.
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+      - name: Migrations match the models
+        # Catches a model change committed without its migration, and the
+        # reverse: a migration whose state has drifted from the models.
+        env:
+          DJANGO_SETTINGS_MODULE: openedx_webhook_relay.tests.settings
+          # django-admin does not add the working directory to sys.path (unlike
+          # manage.py), and this job does not install the package itself.
+          PYTHONPATH: .
+        run: |
+          pip install -r requirements/test.txt
+          django-admin makemigrations openedx_webhook_relay --check --dry-run
 
   test:
     runs-on: ubuntu-latest
     strategy:
+      # Without this a single failing leg cancels the others, so you see one
+      # error instead of which combinations actually break.
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
         django-version: ["4.2", "5.2"]

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Package metadata for openedx_webhook_relay."""
 
 import os
@@ -9,9 +8,11 @@ from setuptools import find_packages, setup
 
 
 def get_version(*file_paths):
+    """Return the version string declared in the given file."""
     filename = os.path.join(os.path.dirname(__file__), *file_paths)
-    version_file = open(filename, encoding="utf8").read()
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
+    with open(filename, encoding="utf8") as handle:
+        version_file = handle.read()
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.MULTILINE)
     if version_match:
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")

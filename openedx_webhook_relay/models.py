@@ -347,9 +347,13 @@ class WebhookDeliveryAttempt(TimeStampedModel):
     class Meta:
         verbose_name = "Webhook delivery attempt"
         ordering = ["-created"]
+        # Names are given explicitly and must match those created in
+        # 0001_initial. Without them Django derives its own hashed names, sees a
+        # mismatch against the migrated state, and asks for a rename migration
+        # on every `makemigrations` run.
         indexes = [
-            models.Index(fields=["endpoint", "status"]),
-            models.Index(fields=["correlation_id"]),
+            models.Index(fields=["endpoint", "status"], name="owr_wda_endpoint_status_idx"),
+            models.Index(fields=["correlation_id"], name="owr_wda_correlation_id_idx"),
         ]
 
     def __str__(self):
