@@ -233,6 +233,23 @@ def deliver_webhook(self, endpoint_id, event, raw_payload, correlation_id):
     secret = endpoint.effective_secret()
     if secret:
         headers[header_name] = sign_payload(payload_bytes, secret)
+    else:
+        # Unsigned delivery is almost never intended: the receiver has nothing
+        # to verify and cannot tell this payload from a forged one. It used to
+        # happen silently and still record a successful attempt, so say so
+        # loudly on every attempt rather than leaving it to a config review.
+        django_logger.warning(
+            "Webhook delivery is UNSIGNED: no signing secret for endpoint=%s and no "
+            "OPENEDX_WEBHOOK_RELAY_DEFAULT_SECRET configured. event=%s correlation_id=%s. "
+            "The receiver cannot authenticate this payload.",
+            endpoint.pk, event, correlation_id,
+            extra=_log_extra(
+                endpoint_id=endpoint.pk,
+                event=event,
+                correlation_id=correlation_id,
+                status="unsigned",
+            ),
+        )
 
     # Dual-signature support during a secret rotation window: a receiver
     # can accept either signature until it has confirmed the new secret and
