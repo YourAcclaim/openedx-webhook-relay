@@ -70,7 +70,19 @@ class Command(BaseCommand):
             if not new_secret:
                 raise CommandError(f"{new_secret_file} is empty.")
 
-            if not options["no_keep_previous"] and isinstance(backend, DatabaseSecretBackend):
+            keep_previous = not options["no_keep_previous"]
+            if keep_previous and not isinstance(backend, DatabaseSecretBackend):
+                # Silently ignoring this used to print success while performing a
+                # hard cutover, so an operator following the rotation runbook
+                # believed they had a dual-signature window they did not have.
+                raise CommandError(
+                    f"Keeping the previous secret is only supported by the "
+                    f"'database' secret backend, not {type(backend).__name__}. "
+                    "Re-run with --no-keep-previous to accept an immediate "
+                    "cutover, and coordinate the receiver before you do — there "
+                    "will be no window where both signatures are accepted."
+                )
+            if keep_previous:
                 old_secret = backend.get_secret(endpoint)
                 if old_secret:
                     endpoint.signing_secret_previous = old_secret

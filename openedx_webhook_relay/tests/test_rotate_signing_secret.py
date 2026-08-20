@@ -86,3 +86,64 @@ def test_empty_secret_file_raises(tmp_path):
             new_secret_file=str(secret_file),
             stdout=StringIO(),
         )
+
+
+class _NonDatabaseBackend:
+    """Stand-in for any backend that stores secrets outside this database."""
+
+    def __init__(self):
+        self.written = None
+
+    def get_secret(self, endpoint):  # pylint: disable=unused-argument
+        return "old-secret"
+
+    def set_secret(self, endpoint, plaintext):  # pylint: disable=unused-argument
+        self.written = plaintext
+
+
+def test_keep_previous_is_refused_on_a_non_database_backend(tmp_path, monkeypatch):
+    """
+    Silently ignoring keep-previous used to print success while doing a hard
+    cutover, so an operator believed they had a dual-signature window.
+    """
+    backend = _NonDatabaseBackend()
+    monkeypatch.setattr(
+        "openedx_webhook_relay.management.commands.rotate_signing_secret.get_secret_backend",
+        lambda: backend,
+    )
+    endpoint = WebhookEndpointFactory(signing_secret="old-secret")
+    secret_file = tmp_path / "new-secret.txt"
+    secret_file.write_text("brand-new-secret\n")
+
+    with pytest.raises(CommandError, match="only supported by the 'database' secret backend"):
+        call_command(
+            "rotate_signing_secret",
+            endpoint_id=endpoint.pk,
+            new_secret_file=str(secret_file),
+            stdout=StringIO(),
+        )
+
+    # Refused before writing anything.
+    assert backend.written is None
+
+
+def test_no_keep_previous_is_allowed_on_a_non_database_backend(tmp_path, monkeypatch):
+    """Opting into the hard cutover explicitly must still work."""
+    backend = _NonDatabaseBackend()
+    monkeypatch.setattr(
+        "openedx_webhook_relay.management.commands.rotate_signing_secret.get_secret_backend",
+        lambda: backend,
+    )
+    endpoint = WebhookEndpointFactory(signing_secret="old-secret")
+    secret_file = tmp_path / "new-secret.txt"
+    secret_file.write_text("brand-new-secret\n")
+
+    call_command(
+        "rotate_signing_secret",
+        endpoint_id=endpoint.pk,
+        new_secret_file=str(secret_file),
+        no_keep_previous=True,
+        stdout=StringIO(),
+    )
+
+    assert backend.written == "brand-new-secret"

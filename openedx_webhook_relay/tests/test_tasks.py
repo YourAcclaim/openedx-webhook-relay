@@ -17,6 +17,7 @@ below, which re-applies the task with an incremented ``retries`` count.
 
 # pylint: disable=missing-function-docstring
 
+import logging
 import uuid
 from datetime import timedelta
 
@@ -421,3 +422,54 @@ def test_webhook_delivery_recorded_signal_fires_for_every_attempt():
     assert len(received) == 1
     assert received[0]["status"] == WebhookDeliveryAttempt.Status.SUCCEEDED
     assert received[0]["endpoint_id"] == endpoint.pk
+
+
+@responses.activate
+def test_unsigned_delivery_logs_a_warning(settings, caplog):
+    """
+    No endpoint secret and no default secret means no signature header.
+
+    The delivery still succeeds, which is exactly why it has to be loud: the
+    receiver has nothing to verify and the audit row looks healthy.
+    """
+    settings.OPENEDX_WEBHOOK_RELAY_DEFAULT_SECRET = ""
+    endpoint = WebhookEndpointFactory(signing_secret="")
+    responses.add(responses.POST, endpoint.webhook_url, status=200)
+
+    with caplog.at_level(logging.WARNING, logger="openedx_webhook_relay.tasks"):
+        _run(endpoint.pk, "COURSE_PASSING_STATUS_UPDATED", RAW_PAYLOAD, _correlation_id())
+
+    assert "UNSIGNED" in caplog.text
+    sent = responses.calls[0].request
+    assert "X-OpenEdX-Webhook-Signature" not in sent.headers
+
+    attempt = WebhookDeliveryAttempt.objects.get(endpoint=endpoint)
+    assert attempt.status == WebhookDeliveryAttempt.Status.SUCCEEDED
+
+
+@responses.activate
+def test_signed_delivery_logs_no_unsigned_warning(settings, caplog):
+    settings.OPENEDX_WEBHOOK_RELAY_DEFAULT_SECRET = ""
+    endpoint = WebhookEndpointFactory(signing_secret="shhh")
+    responses.add(responses.POST, endpoint.webhook_url, status=200)
+
+    with caplog.at_level(logging.WARNING, logger="openedx_webhook_relay.tasks"):
+        _run(endpoint.pk, "COURSE_PASSING_STATUS_UPDATED", RAW_PAYLOAD, _correlation_id())
+
+    assert "UNSIGNED" not in caplog.text
+    assert "X-OpenEdX-Webhook-Signature" in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_default_secret_signs_when_endpoint_has_none(settings):
+    """The fallback secret still signs, so it must not warn."""
+    settings.OPENEDX_WEBHOOK_RELAY_DEFAULT_SECRET = "fallback-secret"
+    endpoint = WebhookEndpointFactory(signing_secret="")
+    responses.add(responses.POST, endpoint.webhook_url, status=200)
+
+    _run(endpoint.pk, "COURSE_PASSING_STATUS_UPDATED", RAW_PAYLOAD, _correlation_id())
+
+    sent = responses.calls[0].request
+    assert verify_signature(
+        sent.body, "fallback-secret", sent.headers["X-OpenEdX-Webhook-Signature"]
+    )
