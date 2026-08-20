@@ -29,7 +29,14 @@ def sign_payload(payload_bytes: bytes, secret: str) -> str:
 
 
 def verify_signature(payload_bytes: bytes, secret: str, received_signature: str) -> bool:
-    """Verify an incoming signature (used by tests and as receiver reference code)."""
+    """
+    Verify a signature produced by ``sign_payload``.
+
+    Used by this package's own tests. Receivers are separate services that
+    will not import this package — README.rst carries a self-contained
+    snippet for them, deliberately duplicating this logic rather than
+    implying a dependency.
+    """
     if not received_signature:
         return False
     expected = sign_payload(payload_bytes, secret)
