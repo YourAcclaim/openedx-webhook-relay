@@ -15,7 +15,8 @@ import base64
 
 from cryptography.fernet import Fernet
 from django.conf import settings
-from django.core.checks import Error, Warning as CheckWarning
+from django.core.checks import Error
+from django.core.checks import Warning as CheckWarning
 
 KEY_SETTING = "OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY"
 
