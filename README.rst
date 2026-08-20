@@ -344,23 +344,8 @@ Development
   make test-quality
 
 See CONTRIBUTING.rst for details and docs/decisions/ for the architecture
-decision records behind this design.
-
-Suggested improvements (not yet implemented)
-***********************************************
-
-* **Automated secret-backend migration** — a management command to move
-  existing secrets from the database backend into an external one (and
-  back), rather than a manual one-off script.
-* **Admin action to force-close/open a circuit breaker** — currently only
-  automatic (threshold/cooldown-driven); an operator override would help
-  during a known, already-fixed outage.
-* **Per-endpoint delivery rate limiting** — independent from the circuit
-  breaker, for receivers that need a maximum requests/second regardless of
-  failure state.
-* **OpenTelemetry tracing** — the metrics hook (ADR 0008) covers
-  counters/signals; distributed tracing spans around delivery attempts
-  would help correlate with receiver-side traces.
+decision records behind this design. Planned work is tracked as GitHub issues
+rather than listed here, so it cannot silently fall out of date.
 
 License
 ********
