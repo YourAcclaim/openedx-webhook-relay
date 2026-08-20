@@ -11,6 +11,7 @@ venv/
 .coverage
 htmlcov/
 coverage.xml
+coverage.json
 .tox/
 
 # Local env / secrets

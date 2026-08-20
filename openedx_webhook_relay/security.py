@@ -44,7 +44,7 @@ def _event_data_key(payload: dict) -> str | None:
     return None
 
 
-def get_nested_value(root, dotted_path: str) -> Any:
+def _get_nested_value(root, dotted_path: str) -> Any:
     """Read a value using dot notation from an already-resolved root dict."""
     if root is None or not dotted_path:
         return root if dotted_path == "" else None
@@ -57,7 +57,7 @@ def get_nested_value(root, dotted_path: str) -> Any:
     return current
 
 
-def set_nested_value(root: dict, dotted_path: str, value: Any) -> None:
+def _set_nested_value(root: dict, dotted_path: str, value: Any) -> None:
     """Set a value using dot notation, creating intermediate dicts."""
     if not dotted_path:
         return
@@ -71,7 +71,7 @@ def set_nested_value(root: dict, dotted_path: str, value: Any) -> None:
     current[segments[-1]] = value
 
 
-def delete_nested_path(root, dotted_path: str) -> None:
+def _delete_nested_path(root, dotted_path: str) -> None:
     """Remove a nested key if present."""
     if root is None or not dotted_path:
         return
@@ -122,11 +122,11 @@ def apply_allowlist(payload: dict, allowlist: list) -> dict:
 
         if path.startswith("event_metadata."):
             sub_path = path[len("event_metadata."):]
-            value = get_nested_value(payload.get("event_metadata"), sub_path)
+            value = _get_nested_value(payload.get("event_metadata"), sub_path)
             if value is None:
                 continue
             result.setdefault("event_metadata", {})
-            set_nested_value(result["event_metadata"], sub_path, value)
+            _set_nested_value(result["event_metadata"], sub_path, value)
             continue
 
         if path == "data":
@@ -138,11 +138,11 @@ def apply_allowlist(payload: dict, allowlist: list) -> dict:
             if not data_key:
                 continue
             sub_path = path[len("data."):]
-            value = get_nested_value(payload.get(data_key), sub_path)
+            value = _get_nested_value(payload.get(data_key), sub_path)
             if value is None:
                 continue
             result.setdefault(data_key, {})
-            set_nested_value(result[data_key], sub_path, value)
+            _set_nested_value(result[data_key], sub_path, value)
             continue
 
         if path in payload:
@@ -154,11 +154,11 @@ def apply_allowlist(payload: dict, allowlist: list) -> dict:
             if not path.startswith(prefix):
                 continue
             sub_path = path[len(prefix):]
-            value = get_nested_value(payload.get(key), sub_path)
+            value = _get_nested_value(payload.get(key), sub_path)
             if value is None:
                 break
             result.setdefault(key, {})
-            set_nested_value(result[key], sub_path, value)
+            _set_nested_value(result[key], sub_path, value)
             break
 
     return result
@@ -178,7 +178,7 @@ def apply_denylist(payload: dict, denylist: list) -> None:
             continue
 
         if path.startswith("event_metadata."):
-            delete_nested_path(payload.get("event_metadata"), path[len("event_metadata."):])
+            _delete_nested_path(payload.get("event_metadata"), path[len("event_metadata."):])
             continue
 
         if path == "data":
@@ -188,7 +188,7 @@ def apply_denylist(payload: dict, denylist: list) -> None:
 
         if path.startswith("data."):
             if data_key:
-                delete_nested_path(payload.get(data_key), path[len("data."):])
+                _delete_nested_path(payload.get(data_key), path[len("data."):])
             continue
 
         if path in payload:
@@ -198,7 +198,7 @@ def apply_denylist(payload: dict, denylist: list) -> None:
         for key in list(payload.keys()):
             prefix = f"{key}."
             if path.startswith(prefix):
-                delete_nested_path(payload.get(key), path[len(prefix):])
+                _delete_nested_path(payload.get(key), path[len(prefix):])
                 break
 
 
