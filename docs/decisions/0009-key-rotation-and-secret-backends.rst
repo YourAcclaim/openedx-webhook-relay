@@ -19,13 +19,19 @@ Decision
 
 **Key rotation.** ``rotate_encryption_key`` decrypts every
 ``WebhookEndpoint``'s ``signing_secret``/``signing_secret_previous`` under
-the old key (fetched with ``override_settings`` so
-``EncryptedCharField.from_db_value`` decrypts correctly at query time),
-then re-encrypts and saves each row under the new key (same trick, applied
-at save time instead). Doing it row-by-row in a single ``save()`` per row
-means a crash mid-rotation leaves each already-processed row fully
-readable under the new key and each not-yet-processed row fully readable
+the old key, then re-encrypts and saves each row under the new key. Which key
+is in force is controlled by the command's own ``using_encryption_key``
+context manager, which reassigns the setting for the duration of a block;
+``EncryptedCharField`` resolves the key per call, so that is enough to decrypt
+at query time and encrypt at save time. Doing it row-by-row in a single
+``save()`` per row means a crash mid-rotation leaves each already-processed row
+fully readable under the new key and each not-yet-processed row fully readable
 under the old key — never a half-encrypted, unreadable value.
+
+Originally this used ``django.test.utils.override_settings``. That was replaced:
+it is test scaffolding, and it broadcasts ``setting_changed`` to every installed
+app, which is an unwanted side effect in a command that rewrites production
+secrets.
 
 **Pluggable secret backend.** ``secrets_backend.py`` defines a tiny
 ``get_secret``/``set_secret`` interface. The default

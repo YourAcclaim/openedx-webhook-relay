@@ -43,14 +43,20 @@ way for one-off cleanups or non-default retention windows.
 Consequences
 ************
 
-* Retention is enforced without any action required at deployment time,
-  closing the gap where a deployment simply never got around to scheduling
-  the management command.
-* This depends on the deployment actually running a Celery beat scheduler
-  process. Every mainline Open edX deployment already does (edx-platform
-  and other plugins rely on beat for their own periodic tasks), but a
-  from-scratch, non-standard deployment without beat running would need to
-  either start one or fall back to the management command on its own cron.
+* Retention is enforced without any *scheduling* work at deployment time —
+  but not without any action at all. See the next point.
+* **This depends on the deployment running a Celery beat scheduler process,
+  and a stock Tutor deployment does not have one.** Tutor runs ``lms`` and
+  ``lms-worker`` but ships no ``beat`` container, so registering the entry
+  achieves nothing there: it exists, nothing dispatches it, and the audit
+  table grows without limit. Nothing reports a problem, because from this
+  plugin's side registration succeeded. This ADR originally asserted that
+  every mainline deployment already runs beat; that was wrong for the most
+  common way Open edX is deployed, and the assumption is corrected here
+  rather than left to be discovered when a disk fills. Deployments without
+  beat must either add a beat service or set
+  ``OPENEDX_WEBHOOK_RELAY_AUTO_PURGE_ENABLED = False`` and schedule
+  ``purge_old_delivery_attempts`` themselves. README.rst documents both.
 * The retention window and the purge schedule are two independent
   settings (``OPENEDX_WEBHOOK_RELAY_AUDIT_RETENTION_DAYS`` vs.
   ``OPENEDX_WEBHOOK_RELAY_PURGE_SCHEDULE_HOUR``/``_MINUTE``) — changing how
