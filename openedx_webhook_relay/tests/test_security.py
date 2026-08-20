@@ -8,13 +8,13 @@
 import json
 
 from openedx_webhook_relay.security import (
+    _delete_nested_path,
+    _get_nested_value,
+    _set_nested_value,
     apply_allowlist,
     apply_denylist,
-    delete_nested_path,
-    get_nested_value,
     payload_fingerprint,
     serialize_payload,
-    set_nested_value,
     should_send_passing_event,
     sign_payload,
     verify_signature,
@@ -248,30 +248,30 @@ def test_should_send_passing_event_skips_non_dict_values():
 def test_get_nested_value_guards():
     root = {"a": {"b": 1}}
 
-    assert get_nested_value(root, "") is root       # empty path returns the root
-    assert get_nested_value(None, "a") is None      # missing root
-    assert get_nested_value(root, "a.missing") is None
-    assert get_nested_value(root, "a.b.too.deep") is None  # descends past a scalar
+    assert _get_nested_value(root, "") is root       # empty path returns the root
+    assert _get_nested_value(None, "a") is None      # missing root
+    assert _get_nested_value(root, "a.missing") is None
+    assert _get_nested_value(root, "a.b.too.deep") is None  # descends past a scalar
 
 
 def test_set_nested_value_ignores_an_empty_path():
     root = {"a": 1}
 
-    set_nested_value(root, "", "ignored")
+    _set_nested_value(root, "", "ignored")
     assert root == {"a": 1}
 
 
 def test_set_nested_value_replaces_a_scalar_with_a_dict():
     root = {"a": "scalar"}
 
-    set_nested_value(root, "a.b", 2)
+    _set_nested_value(root, "a.b", 2)
     assert root == {"a": {"b": 2}}
 
 
 def test_delete_nested_path_guards():
     root = {"a": {"b": 1}}
 
-    delete_nested_path(None, "a")        # no root
-    delete_nested_path(root, "")         # no path
-    delete_nested_path(root, "x.y")      # missing intermediate
+    _delete_nested_path(None, "a")        # no root
+    _delete_nested_path(root, "")         # no path
+    _delete_nested_path(root, "x.y")      # missing intermediate
     assert root == {"a": {"b": 1}}

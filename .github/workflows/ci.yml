@@ -29,6 +29,17 @@ jobs:
         run: |
           pip install pre-commit
           pre-commit run --all-files
+      - name: Audit pinned dependencies
+        # Pinning stops surprise upgrades but also stops surprise *fixes*, so the
+        # pins need checking against advisories on every run.
+        run: |
+          pip install pip-audit
+          pip-audit --progress-spinner=off \
+            -r requirements/base.txt \
+            -r requirements/test.txt \
+            -r requirements/quality.txt \
+            -r requirements/dev.txt \
+            -r requirements/aws.txt
       - name: Migrations match the models
         # Catches a model change committed without its migration, and the
         # reverse: a migration whose state has drifted from the models.
@@ -65,7 +76,13 @@ jobs:
           pip install -e .
           python -c "import django; print('Django', django.get_version())"
       - name: Run tests with coverage
-        run: pytest --cov=openedx_webhook_relay --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+        run: |
+          pytest --cov=openedx_webhook_relay --cov-report=term-missing \
+            --cov-report=xml --cov-report=json --cov-fail-under=90
+      - name: Per-module coverage floor
+        # The aggregate gate above can sit comfortably green while one module is
+        # barely covered — security.py was at 72% while the total read 94%.
+        run: python scripts/check_coverage_floor.py --min 90 coverage.json
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:

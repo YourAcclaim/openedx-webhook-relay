@@ -1,0 +1,37 @@
+# Dependency updates.
+#
+# Requirements are pinned (requirements/*.txt, compiled from *.in), which trades
+# surprise breakage for silent ageing — pins do not update themselves. These
+# updates are what keep that trade honest.
+#
+# Note that Dependabot edits the compiled *.txt files directly and does not know
+# about the *.in sources. Treat its PRs as a prompt: for anything beyond a
+# single patch bump, re-run `make upgrade` under Python 3.11 so the whole pin set
+# stays internally consistent.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/requirements"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the lint/test toolchain: these move together and none of
+      # them ship to production.
+      dev-tooling:
+        patterns:
+          - "ruff"
+          - "isort"
+          - "pylint*"
+          - "pytest*"
+          - "pre-commit"
+          - "tox"
+          - "pip-tools"
+          - "edx-lint"
+
+  # Keeps actions/checkout and actions/setup-python current; stale action major
+  # versions are a common source of sudden CI breakage.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
