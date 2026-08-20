@@ -10,6 +10,45 @@ Change Log
 Unreleased
 **********
 
+Added
+=====
+
+* A Django system check for ``OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY``
+  (``openedx_webhook_relay.E001``/``E002``, and ``W001`` on an external secret
+  backend). There was previously no startup validation, so a missing or
+  malformed key survived deploy and surfaced later as a 500 in admin when
+  saving an endpoint, or as a crashed delivery task. Note this means
+  ``manage.py check`` — and therefore ``migrate``, ``runserver`` and most
+  management commands — now **fails on a deployment that was previously
+  starting** with a bad key. That is the intent: it moves the failure to
+  deploy time.
+* Deliveries that go out unsigned now log a warning naming the endpoint, event
+  and correlation id. Previously an endpoint with no signing secret, and no
+  ``OPENEDX_WEBHOOK_RELAY_DEFAULT_SECRET``, silently omitted the signature
+  header while still recording the attempt as succeeded — leaving the receiver
+  with nothing to authenticate and no indication anything was wrong.
+
+Changed
+=======
+
+* ``rotate_signing_secret`` now **raises** ``CommandError`` when asked to keep
+  the previous secret on a backend that cannot hold one, instead of silently
+  ignoring the request and reporting success. Only the ``database`` backend
+  retains a previous secret, so on any other backend the old behaviour
+  performed a hard cutover while an operator following the rotation runbook
+  believed they had a dual-signature window. **This can break existing
+  automation**: pass ``--no-keep-previous`` to accept an immediate cutover,
+  and coordinate the receiver before doing so.
+* ``WebhookDeliveryAttempt.Meta.indexes`` now names its two indexes explicitly,
+  matching the names created in ``0001_initial``. Without the names Django
+  derived its own and reported a pending rename on every ``makemigrations``
+  run. No schema change; ``makemigrations --check`` is now clean and enforced
+  in CI.
+* ``security.py``'s nested-path helpers (``get_nested_value``,
+  ``set_nested_value``, ``delete_nested_path``) are now underscore-private.
+  They were public names used only within that module and its tests, which
+  advertised an API contract that was never intended.
+
 Removed
 =======
 
