@@ -84,7 +84,7 @@ jobs:
         # barely covered — security.py was at 72% while the total read 94%.
         run: python scripts/check_coverage_floor.py --min 90 coverage.json
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.python-version }}-${{ matrix.django-version }}
           path: coverage.xml
