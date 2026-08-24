@@ -162,7 +162,7 @@ Empty output means the plugin is not being applied — revisit step 2.
 **4. Add the package**::
 
   tutor config save \
-    --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/YourAcclaim/openedx-webhook-relay.git@v1.3.0'
+    --append OPENEDX_EXTRA_PIP_REQUIREMENTS='git+https://github.com/YourAcclaim/openedx-webhook-relay.git@v1.4.0'
 
 **5. Build, then reboot.** Use ``reboot``, not ``restart``:
 ``docker compose restart`` reuses the existing container and its old image, and
