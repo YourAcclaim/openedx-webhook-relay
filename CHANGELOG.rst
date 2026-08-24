@@ -13,6 +13,16 @@ Unreleased
 Added
 =====
 
+* ``scripts/install_tutor.sh``, which runs the Tutor install sequence and
+  asserts each step. The assertions are the point: this install's failures are
+  all silent and late — a plugin file that never got written, a setting that
+  never rendered into LMS settings, ``restart`` reusing the previous image — and
+  each surfaces hours later as a 500 in admin or a missing app label. It
+  requires the encryption key as input rather than generating one, since a
+  script that mints a key silently produces a different one on every run and
+  makes stored secrets unreadable if nobody captures it. It also does not create
+  the endpoint, whose signing secret has to be coordinated with the receiver.
+  ``--verify-only`` runs the checks against an existing deployment.
 * A Django system check for ``OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY``
   (``openedx_webhook_relay.E001``/``E002``, and ``W001`` on an external secret
   backend). There was previously no startup validation, so a missing or
