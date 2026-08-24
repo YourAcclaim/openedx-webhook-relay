@@ -99,8 +99,21 @@ Supported events
 Installation (Tutor)
 *********************
 
-In this order. The encryption key has to be working *before* you create an
-endpoint, because storing the first signing secret is what first needs it.
+``scripts/install_tutor.sh`` runs the whole sequence below and asserts each
+step, which is the part worth having: every failure this install can produce is
+silent and late. Run it from a checkout — ``scripts/`` is not shipped in the
+installed package, and it runs before the plugin is installed anyway::
+
+  OPENEDX_WEBHOOK_RELAY_ENCRYPTION_KEY="$(your-secret-store get ...)" \
+    scripts/install_tutor.sh
+
+It deliberately will not generate the encryption key or create the endpoint —
+see its ``--help``. ``--verify-only`` re-runs just the checks against a
+deployment, which is also the quickest way to diagnose one.
+
+The manual sequence, in this order. The encryption key has to be working
+*before* you create an endpoint, because storing the first signing secret is
+what first needs it.
 
 **1. Generate and set the encryption key.** A Fernet key is 32 random bytes,
 urlsafe-base64 encoded, so no Python is required::
