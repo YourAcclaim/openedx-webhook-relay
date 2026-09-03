@@ -6,45 +6,45 @@
 #
 amqp==5.3.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   kombu
 appdirs==1.4.4
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   fs
 asgiref==3.12.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   django
 attrs==26.1.0
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
     #   openedx-events
 billiard==4.2.4
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
 celery==5.6.3
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
 certifi==2026.7.22
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   requests
 cffi==2.1.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   cryptography
     #   pynacl
 charset-normalizer==3.5.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   requests
 click==8.4.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
     #   click-didyoumean
     #   click-plugins
@@ -52,26 +52,26 @@ click==8.4.2
     #   edx-django-utils
 click-didyoumean==0.3.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
 click-plugins==1.1.1.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
 click-repl==0.3.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
 coverage==7.15.4
     # via pytest-cov
 cryptography==50.0.0
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
 django==5.2.17
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
     #   django-crum
     #   django-model-utils
     #   django-waffle
@@ -79,78 +79,78 @@ django==5.2.17
     #   openedx-events
 django-crum==0.7.9
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-django-utils
 django-model-utils==5.0.0
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
 django-waffle==5.0.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-django-utils
 dnspython==2.8.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   pymongo
 edx-ccx-keys==2.0.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   openedx-events
 edx-django-utils==8.0.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   openedx-events
 edx-opaque-keys==4.0.0
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
     #   edx-ccx-keys
     #   openedx-events
 factory-boy==3.3.3
-    # via -r requirements/test.in
+    # via -r test.in
 faker==40.36.0
     # via factory-boy
 fastavro==1.12.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   openedx-events
 freezegun==1.5.5
-    # via -r requirements/test.in
+    # via -r test.in
 fs==2.4.16
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 idna==3.19
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   requests
 iniconfig==2.3.0
     # via pytest
 kombu==5.6.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
 lxml==6.1.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 mako==1.4.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 markupsafe==3.0.3
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   mako
     #   xblock
 openedx-events==10.5.0
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
 packaging==26.3
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   kombu
     #   pytest
 pluggy==1.6.0
@@ -159,115 +159,115 @@ pluggy==1.6.0
     #   pytest-cov
 prompt-toolkit==3.0.53
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   click-repl
 psutil==7.2.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-django-utils
 pycparser==3.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   cffi
 pygments==2.21.0
     # via pytest
 pymongo==4.17.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-opaque-keys
 pynacl==1.6.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-django-utils
 pytest==9.1.1
     # via
-    #   -r requirements/test.in
+    #   -r test.in
     #   pytest-cov
     #   pytest-django
 pytest-cov==7.1.0
-    # via -r requirements/test.in
+    # via -r test.in
 pytest-django==4.14.0
-    # via -r requirements/test.in
+    # via -r test.in
 python-dateutil==2.9.0.post0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
     #   freezegun
     #   xblock
 pytz==2026.3.post1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 pyyaml==6.0.3
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   responses
     #   xblock
 requests==2.34.2
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
     #   responses
-responses==0.26.2
-    # via -r requirements/test.in
+responses==0.26.3
+    # via -r test.in
 simplejson==4.1.1
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 six==1.17.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-ccx-keys
     #   fs
     #   python-dateutil
 sqlparse==0.6.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   django
 stevedore==5.9.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-django-utils
     #   edx-opaque-keys
 typing-extensions==4.16.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   edx-opaque-keys
 tzdata==2026.3
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   kombu
 tzlocal==5.4.4
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   celery
 urllib3==2.7.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   requests
     #   responses
 vine==5.1.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   amqp
     #   celery
     #   kombu
 wcwidth==0.8.2
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   prompt-toolkit
 web-fragments==4.0.0
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 webob==1.8.11
     # via
-    #   -c requirements/base.txt
+    #   -c base.txt
     #   xblock
 xblock==6.1.0
     # via
-    #   -c requirements/base.txt
-    #   -r requirements/base.in
+    #   -c base.txt
+    #   -r base.in
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
