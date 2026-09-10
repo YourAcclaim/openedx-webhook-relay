@@ -4,9 +4,9 @@
 #
 #    pip-compile --constraint=requirements/base.txt --output-file=requirements/aws.txt --strip-extras requirements/aws.in
 #
-boto3==1.43.74
-    # via -r requirements/aws.in
-botocore==1.43.74
+boto3==1.43.89
+    # via -r aws.in
+botocore==1.43.91
     # via
     #   boto3
     #   s3transfer
@@ -15,16 +15,10 @@ jmespath==1.1.0
     #   boto3
     #   botocore
 python-dateutil==2.9.0.post0
-    # via
-    #   -c requirements/base.txt
-    #   botocore
+    # via botocore
 s3transfer==0.19.2
     # via boto3
 six==1.17.0
-    # via
-    #   -c requirements/base.txt
-    #   python-dateutil
+    # via python-dateutil
 urllib3==2.7.0
-    # via
-    #   -c requirements/base.txt
-    #   botocore
+    # via botocore
