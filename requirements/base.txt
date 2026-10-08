@@ -12,12 +12,12 @@ asgiref==3.12.1
     # via django
 attrs==26.1.0
     # via
-    #   -r requirements/base.in
+    #   -r base.in
     #   openedx-events
 billiard==4.2.4
     # via celery
 celery==5.6.3
-    # via -r requirements/base.in
+    # via -r base.in
 certifi==2026.7.22
     # via requests
 cffi==2.1.1
@@ -40,10 +40,10 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
     # via celery
 cryptography==50.0.0
-    # via -r requirements/base.in
-django==5.2.17
+    # via -r base.in
+django==5.2.18
     # via
-    #   -r requirements/base.in
+    #   -r base.in
     #   django-crum
     #   django-model-utils
     #   django-waffle
@@ -52,7 +52,7 @@ django==5.2.17
 django-crum==0.7.9
     # via edx-django-utils
 django-model-utils==5.0.0
-    # via -r requirements/base.in
+    # via -r base.in
 django-waffle==5.0.0
     # via edx-django-utils
 dnspython==2.8.0
@@ -63,7 +63,7 @@ edx-django-utils==8.0.1
     # via openedx-events
 edx-opaque-keys==4.0.0
     # via
-    #   -r requirements/base.in
+    #   -r base.in
     #   edx-ccx-keys
     #   openedx-events
 fastavro==1.12.2
@@ -83,7 +83,7 @@ markupsafe==3.0.3
     #   mako
     #   xblock
 openedx-events==10.5.0
-    # via -r requirements/base.in
+    # via -r base.in
 packaging==26.3
     # via kombu
 prompt-toolkit==3.0.53
@@ -105,7 +105,7 @@ pytz==2026.3.post1
 pyyaml==6.0.3
     # via xblock
 requests==2.34.2
-    # via -r requirements/base.in
+    # via -r base.in
 simplejson==4.1.1
     # via xblock
 six==1.17.0
@@ -139,7 +139,7 @@ web-fragments==4.0.0
 webob==1.8.11
     # via xblock
 xblock==6.1.0
-    # via -r requirements/base.in
+    # via -r base.in
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
